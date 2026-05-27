@@ -1,6 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import type { ReactNode } from "react"
 import { useEffect, useState } from "react"
 import {  Eye, EyeOff, LockKeyhole, ShieldCheck, Smartphone, UserRound } from "lucide-react"
@@ -11,7 +10,6 @@ import { ExternalAuthEntry } from "@/components/auth/external-auth-entry"
 import { PowCaptchaField } from "@/components/auth/pow-captcha-field"
 import { SmsCaptchaDialog, type SmsCaptchaPayload } from "@/components/auth/sms-captcha-dialog"
 import { TurnstileCaptchaField } from "@/components/auth/turnstile-captcha-field"
-import { useCurrentUser } from "@/components/current-user-provider"
 import { Button } from "@/components/ui/button"
 import {
   InputGroup,
@@ -22,6 +20,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 import { collectAddonAuthFieldsFromFormData } from "@/lib/addon-auth-fields"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 import type { AddonExternalAuthEntry } from "@/lib/addon-external-auth-providers"
 import type { SiteSettingsData } from "@/lib/site-settings"
 import { SMS_CODE_COOLDOWN_SECONDS } from "@/lib/sms-verification"
@@ -33,6 +32,7 @@ interface LoginFormProps {
   addonCaptcha?: ReactNode
   addonAfterFields?: ReactNode
   addonExternalAuthEntries?: AddonExternalAuthEntry[]
+  redirectTarget?: string
 }
 
 export function LoginForm({
@@ -42,9 +42,8 @@ export function LoginForm({
   addonCaptcha,
   addonAfterFields,
   addonExternalAuthEntries = [],
+  redirectTarget = "/",
 }: LoginFormProps) {
-  const router = useRouter()
-  const { refresh: refreshCurrentUser } = useCurrentUser()
   const [loginMode, setLoginMode] = useState<"password" | "phone-code">("password")
   const [login, setLogin] = useState("")
   const [password, setPassword] = useState("")
@@ -205,13 +204,8 @@ export function LoginForm({
       return
     }
 
-    const successMessage = "登录成功，正在跳转到首页…"
-    //setMessage(successMessage)
-    toast.success(successMessage, "登录成功")
-    await refreshCurrentUser()
-    router.replace("/")
-    router.refresh()
-    setLoading(false)
+    const target = normalizeAuthRedirectTarget(redirectTarget)
+    window.location.replace(target)
   }
 
   return (
@@ -352,7 +346,7 @@ export function LoginForm({
         </Button>
       </div>
 
-      {hasAlternativeAuth ? <ExternalAuthEntry settings={settings} mode="login" addonEntries={addonExternalAuthEntries} /> : null}
+      {hasAlternativeAuth ? <ExternalAuthEntry settings={settings} mode="login" addonEntries={addonExternalAuthEntries} redirectTarget={redirectTarget} /> : null}
 
       <SmsCaptchaDialog
         open={smsCaptchaOpen}

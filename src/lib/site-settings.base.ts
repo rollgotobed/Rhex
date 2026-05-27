@@ -2,7 +2,7 @@ import type { PostListDisplayMode } from "@/lib/post-list-display"
 import type { PostListLoadMode } from "@/lib/post-list-load-mode"
 import type { CommentLoadMode } from "@/lib/comment-load-mode"
 import type { FooterLinkItem } from "@/lib/shared/config-parsers"
-import type { LeftSidebarDisplayMode, PostSlugGenerationMode } from "@/lib/site-settings-app-state"
+import type { LeftSidebarDisplayMode, LeftSidebarHomeSettings, PostSlugGenerationMode } from "@/lib/site-settings-app-state"
 import type { SiteSearchSettings } from "@/lib/site-search-settings"
 import type { SiteHeaderAppLinkItem } from "@/lib/site-header-app-links"
 import type { ThemeRuntimeSettings } from "@/lib/theme"
@@ -42,6 +42,7 @@ export interface SiteSettingsBaseData {
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
   leftSidebarDisplayMode: LeftSidebarDisplayMode
+  leftSidebarHome: LeftSidebarHomeSettings
   postSlugGenerationMode: PostSlugGenerationMode
   footerCopyrightText: string
   footerBrandingVisible: boolean

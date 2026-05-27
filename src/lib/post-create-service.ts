@@ -5,6 +5,7 @@ import {
   findAnonymousMaskUserById,
 } from "@/db/anonymous-post-queries"
 import {
+  claimNextSequentialPostSlug,
   createPostRecord,
   incrementBoardPostCount,
   runPostCreateTransaction,
@@ -33,13 +34,14 @@ import { createPostAuctionRecord, enqueuePostAuctionSettlement, normalizePostAuc
 import type { PreparedPointDelta } from "@/lib/point-center"
 import { applyPointDelta, prepareScopedPointDelta } from "@/lib/point-center"
 import { normalizePostAttachmentInputs, syncPostAttachments } from "@/lib/post-attachments"
+import { processInternalPostCardEmbeds } from "@/lib/post-card-embed.server"
 import { buildPostContentDocument, getAllPostContentText, serializePostContentDocument } from "@/lib/post-content"
 import { createPostRedPacketAfterPostCreated, normalizePostRedPacketConfig } from "@/lib/post-red-packets"
 import type { StoredPostRewardPoolConfig } from "@/lib/post-reward-pool-config"
 import { normalizeManualTags, syncPostTaxonomy } from "@/lib/post-editor"
 import { getBoardTreasuryCreditFromConfiguredCharge } from "@/lib/board-treasury"
 import { POINT_LOG_EVENT_TYPES } from "@/lib/point-log-events"
-import {  buildPostSlug } from "@/lib/post-slug"
+import { buildPostSlug } from "@/lib/post-slug"
 import { getSiteSettings } from "@/lib/site-settings"
 import { validatePostPayload } from "@/lib/validators"
 
@@ -167,13 +169,24 @@ export async function createPostFlow(body: unknown, options: CreatePostFlowOptio
   const loginUnlockSafety = loginUnlockContent ? await enforceSensitiveText({ scene: "post.content", text: loginUnlockContent }) : null
   const replyUnlockSafety = replyUnlockContent ? await enforceSensitiveText({ scene: "post.content", text: replyUnlockContent }) : null
   const purchaseUnlockSafety = purchaseUnlockContent ? await enforceSensitiveText({ scene: "post.content", text: purchaseUnlockContent }) : null
+  const [
+    publicContentWithCards,
+    loginUnlockContentWithCards,
+    replyUnlockContentWithCards,
+    purchaseUnlockContentWithCards,
+  ] = await Promise.all([
+    processInternalPostCardEmbeds(contentSafety.sanitizedText, { requestUrl: options.request.url, requestHeaders: options.request.headers }),
+    loginUnlockSafety ? processInternalPostCardEmbeds(loginUnlockSafety.sanitizedText, { requestUrl: options.request.url, requestHeaders: options.request.headers }) : "",
+    replyUnlockSafety ? processInternalPostCardEmbeds(replyUnlockSafety.sanitizedText, { requestUrl: options.request.url, requestHeaders: options.request.headers }) : "",
+    purchaseUnlockSafety ? processInternalPostCardEmbeds(purchaseUnlockSafety.sanitizedText, { requestUrl: options.request.url, requestHeaders: options.request.headers }) : "",
+  ])
 
   const contentDocument = buildPostContentDocument({
-    publicContent: contentSafety.sanitizedText,
-    loginUnlockContent: loginUnlockSafety?.sanitizedText ?? "",
-    replyUnlockContent: replyUnlockSafety?.sanitizedText ?? "",
+    publicContent: publicContentWithCards,
+    loginUnlockContent: loginUnlockContentWithCards,
+    replyUnlockContent: replyUnlockContentWithCards,
     replyThreshold: replyThreshold ?? undefined,
-    purchaseUnlockContent: purchaseUnlockSafety?.sanitizedText ?? "",
+    purchaseUnlockContent: purchaseUnlockContentWithCards,
     purchasePrice: purchasePrice ?? undefined,
     meta: normalizedRedPacket.data?.enabled
       ? {
@@ -186,7 +199,9 @@ export async function createPostFlow(body: unknown, options: CreatePostFlowOptio
   const summary = extractSummaryFromContent(getAllPostContentText(serializedContent))
   const requestUrl = new URL(options.request.url)
   const resolvePostSlug = async () => {
-    const baseSlug = buildPostSlug(titleSafety.sanitizedText, settings.postSlugGenerationMode)
+    const baseSlug = settings.postSlugGenerationMode === "SEQUENTIAL_ID"
+      ? await claimNextSequentialPostSlug()
+      : buildPostSlug(titleSafety.sanitizedText, settings.postSlugGenerationMode)
     const hooked = await executeAddonWaterfallHook("post.slug.value", baseSlug, {
       request: options.request,
       pathname: requestUrl.pathname,

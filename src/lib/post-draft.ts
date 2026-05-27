@@ -76,6 +76,12 @@ export interface SavedPostDraftResult {
   drafts: StoredLocalPostDraftEntry[]
 }
 
+interface DeleteCurrentPostDraftFromStorageOptions {
+  postId?: string
+  draftId?: string | null
+  drafts?: Array<LocalPostDraft | null | undefined>
+}
+
 const STORAGE_KEY_PREFIX = "rhex:post-draft-box"
 const STORAGE_VERSION = 3
 const MAX_DRAFT_BOX_ITEMS = 12
@@ -425,6 +431,42 @@ export function deletePostDraftSnapshotFromStorage(
   const nextDrafts = bucket.drafts.filter((item) => item.id !== draftId)
 
   writeStoredDraftBucket(mode, postId, {
+    ...bucket,
+    drafts: nextDrafts,
+  })
+
+  return nextDrafts
+}
+
+export function deleteCurrentPostDraftFromStorage(
+  mode: PostDraftMode,
+  options: DeleteCurrentPostDraftFromStorageOptions = {},
+) {
+  if (typeof window === "undefined") {
+    return []
+  }
+
+  const bucket = readStoredDraftBucket(mode, options.postId)
+  const targetDraftId = options.draftId?.trim()
+  const targetStateKeys = new Set(
+    (options.drafts ?? [])
+      .filter((draft): draft is LocalPostDraft => Boolean(draft))
+      .map((draft) => buildStoredDraftStateKey(draft)),
+  )
+
+  const nextDrafts = bucket.drafts.filter((entry) => {
+    if (targetDraftId && entry.id === targetDraftId) {
+      return false
+    }
+
+    return !targetStateKeys.has(buildStoredDraftStateKey(entry.data))
+  })
+
+  if (nextDrafts.length === bucket.drafts.length) {
+    return bucket.drafts
+  }
+
+  writeStoredDraftBucket(mode, options.postId, {
     ...bucket,
     drafts: nextDrafts,
   })

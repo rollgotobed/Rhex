@@ -1,12 +1,13 @@
 "use client"
 
 import { Download, FileArchive, Link2, Loader2, Lock, Paperclip } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
 import { toast } from "@/components/ui/toast"
 import { copyTextToClipboard } from "@/lib/clipboard"
+import { addPostReplyCreatedListener } from "@/lib/post-discussion-events"
 
 function formatFileSize(fileSize: number | null | undefined) {
   if (!fileSize || fileSize <= 0) {
@@ -87,10 +88,49 @@ function getAttachmentStatusText(attachment: PostAttachmentListItem) {
   return ""
 }
 
-export function PostAttachmentList({ attachments, pointName }: { attachments: PostAttachmentListItem[]; pointName: string }) {
+function isReplyRequirementBlocker(blockedReason: string) {
+  return blockedReason === "回复本帖后可下载" || blockedReason === "登录并回复本帖后可下载"
+}
+
+export function PostAttachmentList({ postId, attachments, pointName }: { postId: string; attachments: PostAttachmentListItem[]; pointName: string }) {
   const [items, setItems] = useState(attachments)
   const [pendingAttachmentId, setPendingAttachmentId] = useState<string | null>(null)
   const [revealedAttachment, setRevealedAttachment] = useState<RevealedExternalAttachment | null>(null)
+
+  useEffect(() => {
+    setItems(attachments)
+  }, [attachments])
+
+  useEffect(() => {
+    return addPostReplyCreatedListener((detail) => {
+      if (detail.postId !== postId || detail.reviewRequired) {
+        return
+      }
+
+      setItems((current) => current.map((item) => {
+        if (!item.requirementLabels.includes("回复可下") || item.replyRequirementSatisfied) {
+          return item
+        }
+
+        if (!isReplyRequirementBlocker(item.blockedReason)) {
+          return {
+            ...item,
+            replyRequirementSatisfied: true,
+          }
+        }
+
+        const requiresPurchase = item.pointsCost > 0 && !item.hasPurchasedAccess
+
+        return {
+          ...item,
+          canDownload: !requiresPurchase,
+          canPurchase: requiresPurchase,
+          replyRequirementSatisfied: true,
+          blockedReason: "",
+        }
+      }))
+    })
+  }, [postId])
 
   async function handlePurchase(attachment: PostAttachmentListItem) {
     if (!attachment.canPurchase) {

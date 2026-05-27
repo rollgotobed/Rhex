@@ -4,6 +4,7 @@ import { NotificationType, TargetType } from "@/db/types"
 
 import { toggleCommentLike, togglePostLike } from "@/db/interaction-queries"
 import { revalidateContentListCaches } from "@/lib/content-list-cache"
+import { maybePromoteGodCommentByLikes } from "@/lib/god-comments"
 import { handlePostLikeSideEffects } from "@/lib/interaction-side-effects"
 import { buildLikeTaskEventDescriptors } from "@/lib/like-task-events"
 import { enqueueSyncUserReceivedLikes } from "@/lib/level-system"
@@ -11,6 +12,7 @@ import { enqueueNotification } from "@/lib/notification-writes"
 import { logRequestSucceeded } from "@/lib/request-log"
 import { recordGivenLikeTaskEvent, recordReceivedLikeTaskEvent } from "@/lib/task-center-service"
 import { revalidateUserSurfaceCache } from "@/lib/user-surface"
+import { getSiteSettings } from "@/lib/site-settings"
 import { withRequestWriteGuard, withWriteGuard } from "@/lib/write-guard"
 import { createRequestWriteGuardOptions, createWriteGuardOptions } from "@/lib/write-guard-policies"
 
@@ -34,6 +36,7 @@ interface CommentLikeMutationResult {
   targetUserId: number | null
   notificationTargetUserId: number | null
   commentPreview: string
+  likeCount: number
 }
 
 function assertLikeActorStatus(actor: LikeExecutionActor) {
@@ -139,6 +142,17 @@ async function applyCommentLikeMutationEffects(input: {
   commentId: string
   result: CommentLikeMutationResult
 }) {
+  if (input.result.liked) {
+    void getSiteSettings().then((settings) =>
+      maybePromoteGodCommentByLikes({
+        commentId: input.commentId,
+        threshold: settings.godCommentAutoLikeThreshold,
+      }),
+    ).catch((error) => {
+      console.warn("[interaction-like-execution] failed to promote god comment by likes", error)
+    })
+  }
+
   if (input.result.targetUserId) {
     void enqueueSyncUserReceivedLikes(input.result.targetUserId, { notifyOnUpgrade: true })
     revalidateUserSurfaceCache(input.result.targetUserId)

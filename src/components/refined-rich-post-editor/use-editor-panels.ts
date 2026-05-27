@@ -411,7 +411,7 @@ export function useEditorPanels({
       return
     }
 
-    function handlePointerDown(event: MouseEvent) {
+    function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node
 
       if (openPanels.media && !mediaButtonRef.current?.contains(target) && !mediaPanelRef.current?.contains(target)) {
@@ -445,12 +445,12 @@ export function useEditorPanels({
 
     window.addEventListener("resize", handleViewportChange)
     window.addEventListener("scroll", handleViewportChange, true)
-    document.addEventListener("mousedown", handlePointerDown)
+    document.addEventListener("pointerdown", handlePointerDown)
 
     return () => {
       window.removeEventListener("resize", handleViewportChange)
       window.removeEventListener("scroll", handleViewportChange, true)
-      document.removeEventListener("mousedown", handlePointerDown)
+      document.removeEventListener("pointerdown", handlePointerDown)
     }
   }, [
     closeImagePanel,

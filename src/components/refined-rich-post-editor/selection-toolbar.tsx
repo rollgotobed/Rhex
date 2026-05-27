@@ -18,6 +18,7 @@ type FloatingSelectionToolbarProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>
   selectionStore: EditorSelectionStore
   platform: ClientPlatform
+  onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => void
   onMouseDown: (event: React.MouseEvent<HTMLButtonElement>) => void
   onBold: () => void
   onUnderline: () => void
@@ -162,6 +163,7 @@ export function FloatingSelectionToolbar({
   textareaRef,
   selectionStore,
   platform,
+  onPointerDown,
   onMouseDown,
   onBold,
   onUnderline,
@@ -294,25 +296,25 @@ export function FloatingSelectionToolbar({
           : "translate(-50%, 0)",
       }}
     >
-      <ToolButton tip={TOOLBAR_TIPS.bold} platform={platform} onMouseDown={onMouseDown} onClick={onBold}>
+      <ToolButton tip={TOOLBAR_TIPS.bold} platform={platform} onPointerDown={onPointerDown} onMouseDown={onMouseDown} onClick={onBold}>
         <Bold className="h-4 w-4" />
       </ToolButton>
-      <ToolButton tip={TOOLBAR_TIPS.underline} platform={platform} onMouseDown={onMouseDown} onClick={onUnderline}>
+      <ToolButton tip={TOOLBAR_TIPS.underline} platform={platform} onPointerDown={onPointerDown} onMouseDown={onMouseDown} onClick={onUnderline}>
         <Underline className="h-4 w-4" />
       </ToolButton>
-      <ToolButton tip={TOOLBAR_TIPS.strike} platform={platform} onMouseDown={onMouseDown} onClick={onStrike}>
+      <ToolButton tip={TOOLBAR_TIPS.strike} platform={platform} onPointerDown={onPointerDown} onMouseDown={onMouseDown} onClick={onStrike}>
         <Strikethrough className="h-4 w-4" />
       </ToolButton>
-      <ToolButton tip={TOOLBAR_TIPS.highlight} platform={platform} onMouseDown={onMouseDown} onClick={onHighlight}>
+      <ToolButton tip={TOOLBAR_TIPS.highlight} platform={platform} onPointerDown={onPointerDown} onMouseDown={onMouseDown} onClick={onHighlight}>
         <Highlighter className="h-4 w-4" />
       </ToolButton>
-      <ToolButton tip={TOOLBAR_TIPS.code} platform={platform} onMouseDown={onMouseDown} onClick={onInlineCode}>
+      <ToolButton tip={TOOLBAR_TIPS.code} platform={platform} onPointerDown={onPointerDown} onMouseDown={onMouseDown} onClick={onInlineCode}>
         <Code2 className="h-4 w-4" />
       </ToolButton>
-      <ToolButton tip={TOOLBAR_TIPS.imageFromSelection} platform={platform} onMouseDown={onMouseDown} onClick={onImageLink}>
+      <ToolButton tip={TOOLBAR_TIPS.imageFromSelection} platform={platform} onPointerDown={onPointerDown} onMouseDown={onMouseDown} onClick={onImageLink}>
         <ImageIcon className="h-4 w-4" />
       </ToolButton>
-      <ToolButton tip={TOOLBAR_TIPS.quote} platform={platform} onMouseDown={onMouseDown} onClick={onQuote}>
+      <ToolButton tip={TOOLBAR_TIPS.quote} platform={platform} onPointerDown={onPointerDown} onMouseDown={onMouseDown} onClick={onQuote}>
         <Quote className="h-4 w-4" />
       </ToolButton>
     </div>,

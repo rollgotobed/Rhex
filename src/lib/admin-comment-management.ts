@@ -12,6 +12,7 @@ export interface AdminCommentListItem {
   authorUsername: string
   parentId: string | null
   likeCount: number
+  isGodComment: boolean
   status: "NORMAL" | "HIDDEN" | "PENDING"
   statusLabel: string
   reviewNote: string | null
@@ -42,6 +43,7 @@ export interface AdminCommentListResult {
     pending: number
     normal: number
     hidden: number
+    god: number
     root: number
     reply: number
   }

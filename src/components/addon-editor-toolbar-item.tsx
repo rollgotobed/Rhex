@@ -14,6 +14,7 @@ export function AddonEditorToolbarItemHost({
   disabled,
   editor,
   item,
+  onPointerDown,
   onMouseDown,
   selection,
   value,
@@ -22,6 +23,7 @@ export function AddonEditorToolbarItemHost({
   disabled: boolean
   editor: AddonEditorToolbarApi
   item: AddonEditorToolbarItemDescriptor
+  onPointerDown: (event: React.PointerEvent<HTMLElement>) => void
   onMouseDown: (event: React.MouseEvent<HTMLElement>) => void
   selection: { start: number; end: number }
   value: string
@@ -36,6 +38,14 @@ export function AddonEditorToolbarItemHost({
         }
 
         onMouseDown(event)
+      }}
+      onPointerDownCapture={(event) => {
+        const target = event.target as HTMLElement | null
+        if (target?.closest("[data-addon-editor-toolbar-allow-focus='true']")) {
+          return
+        }
+
+        onPointerDown(event)
       }}
     >
       <AddonClientComponentHost

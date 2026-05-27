@@ -4,6 +4,7 @@ import { clearOAuthFlowState, setOAuthFlowState } from "@/lib/auth-flow-state"
 import { createOAuthAuthorizationRequest, isExternalAuthProvider, isExternalAuthProviderEnabled } from "@/lib/auth-provider-config"
 import { setAccountBindingFlash } from "@/lib/account-binding-flash"
 import { getCurrentUser } from "@/lib/auth"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 import { toAbsoluteSiteUrl } from "@/lib/site-origin"
 import { getServerSiteSettings } from "@/lib/site-settings"
 
@@ -40,7 +41,8 @@ export async function GET(request: Request, props: OAuthProviderRouteProps) {
       ? "connect"
       : "login"
   const redirectTo = requestUrl.searchParams.get("redirectTo")?.trim()
-  const safeRedirectTo = redirectTo?.startsWith("/") ? redirectTo : "/settings?tab=profile&profileTab=accounts"
+  const safeConnectRedirectTo = redirectTo?.startsWith("/") ? redirectTo : "/settings?tab=profile&profileTab=accounts"
+  const safeLoginRedirectTo = normalizeAuthRedirectTarget(redirectTo)
 
   if (!isExternalAuthProvider(params.provider)) {
     return redirectWithError(request, "/login", "不支持的第三方登录渠道")
@@ -48,7 +50,7 @@ export async function GET(request: Request, props: OAuthProviderRouteProps) {
 
   const settings = await getServerSiteSettings()
   if (!isExternalAuthProviderEnabled(settings, params.provider)) {
-    return redirectWithError(request, mode === "connect" ? safeRedirectTo : "/login", "该第三方登录暂未开放")
+    return redirectWithError(request, mode === "connect" ? safeConnectRedirectTo : "/login", "该第三方登录暂未开放")
   }
 
   try {
@@ -66,13 +68,13 @@ export async function GET(request: Request, props: OAuthProviderRouteProps) {
       state: authorization.state,
       codeVerifier: authorization.codeVerifier,
       mode,
-      redirectTo: mode === "connect" ? safeRedirectTo : null,
+      redirectTo: mode === "connect" ? safeConnectRedirectTo : mode === "login" ? safeLoginRedirectTo : null,
       connectUserId: mode === "connect" ? currentUser?.id : undefined,
     }, request)
 
     return response
   } catch (error) {
     console.error("[api/auth/oauth/start] unexpected error", error)
-    return redirectWithError(request, mode === "connect" ? safeRedirectTo : "/login", error instanceof Error ? error.message : "第三方登录初始化失败，请检查后台配置")
+    return redirectWithError(request, mode === "connect" ? safeConnectRedirectTo : "/login", error instanceof Error ? error.message : "第三方登录初始化失败，请检查后台配置")
   }
 }

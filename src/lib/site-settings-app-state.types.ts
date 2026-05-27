@@ -163,6 +163,12 @@ export interface LeftSidebarDisplaySettings {
   mode: LeftSidebarDisplayMode
 }
 
+export interface LeftSidebarHomeSettings {
+  enabled: boolean
+  name: string
+  icon: string
+}
+
 export interface FooterCopyrightSettings {
   text: string
   brandingVisible: boolean
@@ -198,13 +204,13 @@ export interface SiteSecuritySettings {
 
 export type SiteEmailBusinessSwitchSettings = EmailBusinessSwitchSettings
 
-export type PostSlugGenerationMode = "TITLE_TIMESTAMP" | "TIME36" | "PINYIN_TIME36" | "TITLE_TIME36"
+export type PostSlugGenerationMode = "TITLE_TIMESTAMP" | "TIME36" | "PINYIN_TIME36" | "TITLE_TIME36" | "SEQUENTIAL_ID"
 
 export function normalizePostSlugGenerationMode(
   value: unknown,
   fallback: PostSlugGenerationMode = "TITLE_TIMESTAMP",
 ): PostSlugGenerationMode {
-  return value === "TIME36" || value === "PINYIN_TIME36" || value === "TITLE_TIME36"
+  return value === "TITLE_TIMESTAMP" || value === "TIME36" || value === "PINYIN_TIME36" || value === "TITLE_TIME36" || value === "SEQUENTIAL_ID"
     ? value
     : fallback
 }

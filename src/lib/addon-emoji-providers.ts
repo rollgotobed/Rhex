@@ -86,6 +86,8 @@ export async function mergeMarkdownEmojiItems(baseItems: MarkdownEmojiItem[]) {
       shortcode: item.shortcode,
       label: item.label,
       icon: item.icon,
+      group: item.group,
+      displaySize: item.displaySize,
     })
   }
 

@@ -70,6 +70,7 @@ export interface SiteSettingsRegistrationRecordData {
 export interface SiteSettingsContentRecordData {
   postEditableMinutes: number
   commentEditableMinutes: number
+  godCommentAutoLikeThreshold: number
   tippingEnabled: boolean
   tippingDailyLimit: number
   tippingPerPostLimit: number

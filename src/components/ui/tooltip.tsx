@@ -1,9 +1,46 @@
 "use client"
 
-import type { ReactNode } from "react"
+import { useSyncExternalStore, type ReactNode } from "react"
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
 import { cn } from "@/lib/utils"
+
+const MOBILE_POINTER_QUERY = "(hover: none), (pointer: coarse)"
+
+function subscribeMobilePointer(callback: () => void) {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return () => undefined
+  }
+
+  const mediaQuery = window.matchMedia(MOBILE_POINTER_QUERY)
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", callback)
+    return () => mediaQuery.removeEventListener("change", callback)
+  }
+
+  mediaQuery.addListener(callback)
+  return () => mediaQuery.removeListener(callback)
+}
+
+function getMobilePointerSnapshot() {
+  return typeof window !== "undefined"
+    && typeof window.matchMedia === "function"
+    && window.matchMedia(MOBILE_POINTER_QUERY).matches
+}
+
+function getServerMobilePointerSnapshot() {
+  return false
+}
+
+function useShouldSkipTooltipForMobile(enableMobileTap?: boolean) {
+  const isMobilePointer = useSyncExternalStore(
+    subscribeMobilePointer,
+    getMobilePointerSnapshot,
+    getServerMobilePointerSnapshot,
+  )
+
+  return isMobilePointer && !enableMobileTap
+}
 
 function TooltipProvider({
   delay = 0,
@@ -87,9 +124,13 @@ function Tooltip({
   disabled = false,
   className,
   contentClassName,
+  enableMobileTap = false,
 }: LegacyTooltipProps) {
+  const shouldSkipMobileTooltip = useShouldSkipTooltipForMobile(enableMobileTap)
+
   if (
     disabled ||
+    shouldSkipMobileTooltip ||
     content === undefined ||
     content === null ||
     content === false ||

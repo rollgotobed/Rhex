@@ -447,6 +447,7 @@ export function useCreatePostDraft({
     handleRestorePendingDraft: persistence.handleRestorePendingDraft,
     handleManualDraftSave: persistence.handleManualDraftSave,
     handleClearDraft: persistence.handleClearDraft,
+    handleClearDraftBox: persistence.handleClearDraftBox,
     handleRestoreDraftFromBox: persistence.handleRestoreDraftFromBox,
     handleDeleteDraftFromBox: persistence.handleDeleteDraftFromBox,
     handleSubmitSuccess: persistence.handleSubmitSuccess,

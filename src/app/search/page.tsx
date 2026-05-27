@@ -15,6 +15,8 @@ import { UserAvatar } from "@/components/user/user-avatar"
 import { getCurrentUser } from "@/lib/auth"
 import { formatNumber, formatRelativeTime } from "@/lib/formatters"
 import { readSearchParam } from "@/lib/search-params"
+import { getConfiguredSiteOrigin } from "@/lib/site-origin"
+import { resolveExternalSearchSiteHost } from "@/lib/site-search-settings"
 import {
   DEFAULT_SEARCH_SCOPE,
   SEARCH_SCOPE_LABELS,
@@ -56,7 +58,11 @@ export default async function SearchPage(props: PageProps<"/search">) {
   const before = activeScope === "posts" ? readSearchParam(searchParams?.before) ?? null : null
   const currentPage = normalizeSearchPage(readSearchParam(searchParams?.page))
   const currentUser = settings.search.enabled && activeScope === "collections" ? await getCurrentUser() : null
-  const siteHost = requestHeaders.get("x-forwarded-host")?.split(",")[0]?.trim() || requestHeaders.get("host")?.trim() || null
+  const siteHost = resolveExternalSearchSiteHost({
+    configuredOrigin: getConfiguredSiteOrigin(),
+    forwardedHost: requestHeaders.get("x-forwarded-host"),
+    host: requestHeaders.get("host"),
+  })
   const scopedResults = settings.search.enabled
     ? await searchByScope(activeScope, keyword, {
         page: currentPage,
@@ -185,13 +191,13 @@ export default async function SearchPage(props: PageProps<"/search">) {
                         支持按帖子、节点、标签、用户、收藏分别搜索。切换分类不会混合不同类型的结果。
                       </SearchEmptyPanel>
                     ) : !settings.search.enabled ? (
-                      <ExternalSearchOptions keyword={keyword} engines={settings.search.externalEngines} siteHost={siteHost} variant="panel" />
+                      <ExternalSearchOptions keyword={keyword} engines={settings.search.externalEngines} siteHost={siteHost ?? undefined} variant="panel" />
                     ) : !scopedResults || resultCount === 0 ? (
                       <>
                         <SearchEmptyPanel>
                           试试缩短关键词、替换近义词，或者直接使用外部搜索扩大范围。
                         </SearchEmptyPanel>
-                        <ExternalSearchOptions keyword={keyword} engines={settings.search.externalEngines} siteHost={siteHost} variant="panel" />
+                        <ExternalSearchOptions keyword={keyword} engines={settings.search.externalEngines} siteHost={siteHost ?? undefined} variant="panel" />
                       </>
                     ) : (
                       <SearchResultsContent

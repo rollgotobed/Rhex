@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { cookies } from "next/headers"
+import { cookies, headers } from "next/headers"
 import { Suspense, type CSSProperties } from "react"
 
 import { BackToTopButton } from "@/components/back-to-top-button"
@@ -91,17 +91,26 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const cookieStorePromise = cookies()
-  const [settings, editorProviders, editorToolbarItems, addonSurfaceOverrides, headBeforeBlocks, headAfterBlocks, bodyStartBlocks, bodyEndBlocks, footerHiddenPaths, cookieStore] = await Promise.all([
+  const headerStorePromise = headers()
+  const [settings, editorProviders, editorToolbarItems, addonSurfaceOverrides, footerHiddenPaths, cookieStore, headerStore] = await Promise.all([
     getSiteSettings(),
     listAddonEditorProviderDescriptors(),
     listAddonEditorToolbarItemDescriptors(),
     listAddonSurfaceOverrideDescriptors(),
-    executeAddonSlot("layout.head.before"),
-    executeAddonSlot("layout.head.after"),
-    executeAddonSlot("layout.body.start"),
-    executeAddonSlot("layout.body.end"),
     getPublishedCustomPageFooterHiddenPaths(),
     cookieStorePromise,
+    headerStorePromise,
+  ])
+  const requestPathname = headerStore.get("x-rhex-pathname") ?? undefined
+  const globalLayoutSlotProps = {
+    pathname: requestPathname,
+    userAgent: headerStore.get("user-agent") ?? "",
+  }
+  const [headBeforeBlocks, headAfterBlocks, bodyStartBlocks, bodyEndBlocks] = await Promise.all([
+    executeAddonSlot("layout.head.before", globalLayoutSlotProps, { pathname: requestPathname }),
+    executeAddonSlot("layout.head.after", globalLayoutSlotProps, { pathname: requestPathname }),
+    executeAddonSlot("layout.body.start", globalLayoutSlotProps, { pathname: requestPathname }),
+    executeAddonSlot("layout.body.end", globalLayoutSlotProps, { pathname: requestPathname }),
   ])
   const vipNameColorStyle = buildVipNameColorStyleVariables(settings.vipNameColors) as CSSProperties
   const sidebarDisplayMode = getSidebarNavigationDisplayModeAttribute(settings.leftSidebarDisplayMode)
@@ -164,6 +173,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               markdownEmojiMap={settings.markdownEmojiMap}
               markdownImageUploadEnabled={settings.markdownImageUploadEnabled}
               leftSidebarDisplayMode={settings.leftSidebarDisplayMode}
+              leftSidebarHome={settings.leftSidebarHome}
               vipLevelIcons={settings.vipLevelIcons}
             >
               <AddonRuntimeProvider editorProviders={editorProviders} editorToolbarItems={editorToolbarItems} surfaceOverrides={addonSurfaceOverrides}>

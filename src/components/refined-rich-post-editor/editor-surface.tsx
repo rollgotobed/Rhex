@@ -366,6 +366,7 @@ type EditorToolbarProps = {
   linkButtonRef: React.RefObject<HTMLDivElement | null>
   imageButtonRef: React.RefObject<HTMLDivElement | null>
   spoilerButtonRef: React.RefObject<HTMLDivElement | null>
+  onToolbarPointerDown: (event: React.PointerEvent<HTMLElement>) => void
   onToolbarMouseDown: (event: React.MouseEvent<HTMLElement>) => void
   onToolbarSelectMouseDown: () => void
   onToolbarSelectOpenChange: (open: boolean) => void
@@ -418,6 +419,7 @@ export function EditorToolbar({
   linkButtonRef,
   imageButtonRef,
   spoilerButtonRef,
+  onToolbarPointerDown,
   onToolbarMouseDown,
   onToolbarSelectMouseDown,
   onToolbarSelectOpenChange,
@@ -462,16 +464,16 @@ export function EditorToolbar({
           onOpenChange={onToolbarSelectOpenChange}
           onSelect={onSetHeadingLevel}
         />
-        <ToolButton tip={TOOLBAR_TIPS.bold} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onBold} disabled={disabled}>
+        <ToolButton tip={TOOLBAR_TIPS.bold} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onBold} disabled={disabled}>
           <Bold className="h-4 w-4" />
         </ToolButton>
-        <ToolButton tip={TOOLBAR_TIPS.underline} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onUnderline} disabled={disabled}>
+        <ToolButton tip={TOOLBAR_TIPS.underline} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onUnderline} disabled={disabled}>
           <Underline className="h-4 w-4" />
         </ToolButton>
-        <ToolButton tip={TOOLBAR_TIPS.strike} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onStrike} disabled={disabled}>
+        <ToolButton tip={TOOLBAR_TIPS.strike} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onStrike} disabled={disabled}>
           <Strikethrough className="h-4 w-4" />
         </ToolButton>
-        <ToolButton tip={TOOLBAR_TIPS.highlight} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onHighlight} disabled={disabled}>
+        <ToolButton tip={TOOLBAR_TIPS.highlight} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onHighlight} disabled={disabled}>
           <Highlighter className="h-4 w-4" />
         </ToolButton>
         <CodeFormatSelect
@@ -481,11 +483,11 @@ export function EditorToolbar({
           onOpenChange={onToolbarSelectOpenChange}
           onSelect={onCodeFormat}
         />
-        <ToolButton tip={TOOLBAR_TIPS.quote} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onQuote} disabled={disabled}>
+        <ToolButton tip={TOOLBAR_TIPS.quote} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onQuote} disabled={disabled}>
           <Quote className="h-4 w-4" />
         </ToolButton>
         <div className="relative" ref={spoilerButtonRef}>
-          <ToolButton tip={TOOLBAR_TIPS.spoiler} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onToggleSpoilerPanel} disabled={disabled} active={showSpoilerPanel}>
+          <ToolButton tip={TOOLBAR_TIPS.spoiler} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onToggleSpoilerPanel} disabled={disabled} active={showSpoilerPanel}>
             <EyeOff className="h-4 w-4" />
           </ToolButton>
         </div>
@@ -497,16 +499,16 @@ export function EditorToolbar({
           onSelect={onListFormat}
         />
         <div className="relative" ref={linkButtonRef}>
-          <ToolButton tip={TOOLBAR_TIPS.link} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onToggleLinkPanel} disabled={disabled} active={showLinkPanel}>
+          <ToolButton tip={TOOLBAR_TIPS.link} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onToggleLinkPanel} disabled={disabled} active={showLinkPanel}>
             <Link2 className="h-4 w-4" />
           </ToolButton>
         </div>
         <div className="relative" ref={tableButtonRef}>
-          <ToolButton tip={TOOLBAR_TIPS.table} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onToggleTablePanel} disabled={disabled} active={showTablePanel}>
+          <ToolButton tip={TOOLBAR_TIPS.table} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onToggleTablePanel} disabled={disabled} active={showTablePanel}>
             <Table2 className="h-4 w-4" />
           </ToolButton>
         </div>
-        <ToolButton tip={TOOLBAR_TIPS.divider} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onInsertDivider} disabled={disabled}>
+        <ToolButton tip={TOOLBAR_TIPS.divider} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onInsertDivider} disabled={disabled}>
           <SeparatorHorizontal className="h-4 w-4" />
         </ToolButton>
         <AlignmentSelect
@@ -517,12 +519,12 @@ export function EditorToolbar({
           onSelect={onAlign}
         />
         <div className="relative" ref={mediaButtonRef}>
-          <ToolButton tip={TOOLBAR_TIPS.media} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onToggleMediaPanel} disabled={disabled} active={showMediaPanel}>
+          <ToolButton tip={TOOLBAR_TIPS.media} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onToggleMediaPanel} disabled={disabled} active={showMediaPanel}>
             <Video className="h-4 w-4" />
           </ToolButton>
         </div>
         <div className="relative" ref={emojiButtonRef}>
-          <ToolButton tip={TOOLBAR_TIPS.emoji} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onToggleEmojiPanel} disabled={disabled} active={showEmojiPanel}>
+          <ToolButton tip={TOOLBAR_TIPS.emoji} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onToggleEmojiPanel} disabled={disabled} active={showEmojiPanel}>
             <Smile className="h-4 w-4" />
           </ToolButton>
         </div>
@@ -530,6 +532,7 @@ export function EditorToolbar({
           <ToolButton
             tip={imageToolbarTip}
             platform={platform}
+            onPointerDown={onToolbarPointerDown}
             onMouseDown={onToolbarMouseDown}
             onClick={onTriggerImageShortcut}
             disabled={disabled || (markdownImageUploadEnabled && uploading)}
@@ -539,10 +542,10 @@ export function EditorToolbar({
           </ToolButton>
           <input ref={fileInputRef} accept="image/*" multiple className="hidden" type="file" onChange={onUpload} disabled={disabled || !markdownImageUploadEnabled || uploading} />
         </div>
-        <ToolButton tip={TOOLBAR_TIPS.base64} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onOpenBase64Dialog} disabled={disabled} active={showBase64Dialog || Boolean(privateReplyRecipient)}>
+        <ToolButton tip={TOOLBAR_TIPS.base64} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onOpenBase64Dialog} disabled={disabled} active={showBase64Dialog || Boolean(privateReplyRecipient)}>
           <Lock className="h-4 w-4" />
         </ToolButton>
-        <ToolButton tip={TOOLBAR_TIPS.help} platform={platform} onMouseDown={onToolbarMouseDown} onClick={onOpenHelpDialog} disabled={disabled}>
+        <ToolButton tip={TOOLBAR_TIPS.help} platform={platform} onPointerDown={onToolbarPointerDown} onMouseDown={onToolbarMouseDown} onClick={onOpenHelpDialog} disabled={disabled}>
           <CircleHelp className="h-4 w-4" />
         </ToolButton>
         {toolbarItems.map((item) => (
@@ -552,6 +555,7 @@ export function EditorToolbar({
             disabled={disabled}
             editor={toolbarApi}
             item={item}
+            onPointerDown={onToolbarPointerDown}
             onMouseDown={onToolbarMouseDown}
             selection={selection}
             value={value}

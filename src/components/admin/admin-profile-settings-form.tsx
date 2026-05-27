@@ -3,6 +3,7 @@
 import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { IconPicker } from "@/components/ui/icon-picker"
 import {
   SettingsInputField as TextField,
   SettingsSection,
@@ -449,6 +450,33 @@ export function AdminProfileSettingsForm({
                   options={[...PROFILE_LEFT_SIDEBAR_DISPLAY_MODE_OPTIONS]}
                   description="默认保持现在的三栏布局；隐藏会移除左侧导航；吸附模式会把左侧导航收进最左侧抽屉，可选择首次默认隐藏或打开。"
                 />
+                <SettingsToggleField
+                  label="左侧导航首页入口"
+                  checked={draft.leftSidebarHomeEnabled}
+                  onChange={(value) =>
+                    updateDraftField("leftSidebarHomeEnabled", value)}
+                  description="关闭后左侧导航不再显示首页入口，只保留分区和节点列表。"
+                />
+                <div className="grid gap-3 md:grid-cols-2">
+                  <TextField
+                    label="首页入口名称"
+                    value={draft.leftSidebarHomeName}
+                    onChange={(value) => updateDraftField("leftSidebarHomeName", value)}
+                    placeholder="首页"
+                    description="显示在左侧导航第一项。"
+                  />
+                  <IconPicker
+                    label="首页入口图标"
+                    value={draft.leftSidebarHomeIcon}
+                    onChange={(value) => updateDraftField("leftSidebarHomeIcon", value)}
+                    popoverTitle="选择首页入口图标"
+                    triggerMode="input"
+                    textareaRows={5}
+                    placeholder="输入 emoji、SVG、图片 URL，或上传后的本地路径"
+                    displayText={draft.leftSidebarHomeIcon ? "已设置首页入口图标" : "选择首页入口图标"}
+                    description="支持 emoji、内联 SVG、远程图片 URL 和上传后的本地资源路径。前台左侧导航会复用同一套图标组件渲染。"
+                  />
+                </div>
                 <SettingsToggleField
                   label="首页右侧统计卡片"
                   checked={draft.homeSidebarStatsCardEnabled}

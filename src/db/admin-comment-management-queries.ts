@@ -3,7 +3,7 @@ import type { Prisma } from "@/db/types"
 import { prisma } from "@/db/client"
 
 export async function countAdminCommentSummary(where: Prisma.CommentWhereInput) {
-  const [total, statusGroups, typeGroups] = await Promise.all([
+  const [total, statusGroups, typeGroups, god] = await Promise.all([
     prisma.comment.count({ where }),
     prisma.comment.groupBy({
       by: ["status"],
@@ -17,6 +17,12 @@ export async function countAdminCommentSummary(where: Prisma.CommentWhereInput) 
       where,
       _count: {
         _all: true,
+      },
+    }),
+    prisma.comment.count({
+      where: {
+        ...where,
+        isGodComment: true,
       },
     }),
   ])
@@ -51,6 +57,7 @@ export async function countAdminCommentSummary(where: Prisma.CommentWhereInput) 
     pending,
     normal,
     hidden,
+    god,
     root,
     reply,
   }

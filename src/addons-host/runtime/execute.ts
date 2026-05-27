@@ -1,5 +1,9 @@
 import "server-only"
 
+// Ensure host AI capabilities are published before addon render/API handlers try
+// to resolve globalThis[Symbol.for("bbs.ai.capabilities.v1")].
+import "@/lib/ai/capabilities/bridge"
+
 import {
   buildAddonExecutionContext,
   loadAddonsRegistry,

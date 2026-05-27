@@ -1,5 +1,7 @@
 "use client"
 
+import { Trash2 } from "lucide-react"
+
 import { POST_TYPE_OPTIONS } from "@/components/post/create-post-form.shared"
 import { Button } from "@/components/ui/rbutton"
 import { formatDateTime } from "@/lib/formatters"
@@ -10,6 +12,7 @@ interface PostDraftBoxProps {
   entries: StoredLocalPostDraftEntry[]
   onRestore: (draftId: string) => void
   onDelete: (draftId: string) => void
+  onClearAll?: () => void
   className?: string
 }
 
@@ -34,17 +37,30 @@ export function PostDraftBox({
   entries,
   onRestore,
   onDelete,
+  onClearAll,
   className,
 }: PostDraftBoxProps) {
   return (
     <section className={cn("bg-card/70", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-sm font-medium">草稿箱</p>
           <p className="text-xs text-muted-foreground">
             草稿按最近更新时间排序；自动保存和手动保存都会更新对应草稿，当前共 {entries.length} 份。
           </p>
         </div>
+        {entries.length > 0 && onClearAll ? (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            className="shrink-0"
+            onClick={onClearAll}
+          >
+            <Trash2 data-icon="inline-start" />
+            清空
+          </Button>
+        ) : null}
       </div>
       {entries.length === 0 ? (
         <div className="mt-3 rounded-xl border border-dashed border-border/80 bg-background/70 px-3 py-6 text-center text-sm text-muted-foreground">

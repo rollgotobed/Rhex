@@ -1,0 +1,2 @@
+ALTER TABLE "SiteSetting"
+  ADD COLUMN IF NOT EXISTS "godCommentAutoLikeThreshold" INTEGER NOT NULL DEFAULT 10;

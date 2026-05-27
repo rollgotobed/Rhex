@@ -12,6 +12,7 @@ import { AuthPanelNotice, AuthShell } from "@/components/auth/auth-shell"
 import { LoginForm } from "@/components/auth/login-form"
 import { listAddonExternalAuthEntries } from "@/lib/addon-external-auth-providers"
 import { getCurrentUser } from "@/lib/auth"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 import { readSearchParam } from "@/lib/search-params"
 import { getSiteSettings } from "@/lib/site-settings"
 import { canSendSms } from "@/lib/sms"
@@ -45,9 +46,10 @@ export default async function LoginPage(props: PageProps<"/login">) {
     canSendSms(),
   ])
   const authError = readSearchParam(searchParams?.authError) ?? ""
+  const redirectTarget = normalizeAuthRedirectTarget(readSearchParam(searchParams?.redirect))
 
   if (user) {
-    redirect("/")
+    redirect(redirectTarget)
   }
 
   const authSlotProps = {
@@ -81,6 +83,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
         <LoginForm
           settings={settings}
           smsAvailable={smsAvailable}
+          redirectTarget={redirectTarget}
           addonBeforeFields={renderAddonBlocks(addonBeforeFieldBlocks)}
           addonCaptcha={renderAddonBlocks(addonCaptchaBlocks)}
           addonAfterFields={renderAddonBlocks(addonAfterFieldBlocks)}

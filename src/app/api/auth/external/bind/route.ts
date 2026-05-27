@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { apiSuccess, createRouteHandler, readJsonBody, requireStringField } from "@/lib/api-route"
 import { attachAuthenticatedSession, completePendingExternalAuthBind, recordSuccessfulExternalLogin } from "@/lib/external-auth-service"
 import { clearPendingExternalAuthState, readPendingExternalAuthState } from "@/lib/auth-flow-state"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 
 export const POST = createRouteHandler(async ({ request }) => {
   const body = await readJsonBody(request)
@@ -25,7 +26,7 @@ export const POST = createRouteHandler(async ({ request }) => {
 
   const response = NextResponse.json(apiSuccess({
     username: user.username,
-    redirectTo: "/",
+    redirectTo: normalizeAuthRedirectTarget(pendingState.redirectTo),
   }, "success"))
 
   clearPendingExternalAuthState(response, request)

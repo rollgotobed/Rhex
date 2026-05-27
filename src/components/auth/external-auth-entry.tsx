@@ -14,6 +14,7 @@ interface ExternalAuthEntryProps {
   mode: "login" | "register"
   addonEntries?: AddonExternalAuthEntry[]
   className?: string
+  redirectTarget?: string
 }
 
 function EntryLink({ href, children, useDocumentNavigation = false }: { href: string; children: React.ReactNode; useDocumentNavigation?: boolean }) {
@@ -40,26 +41,35 @@ function EntryLink({ href, children, useDocumentNavigation = false }: { href: st
   )
 }
 
-export function ExternalAuthEntry({ settings, mode, addonEntries = [], className }: ExternalAuthEntryProps) {
+function withRedirectTarget(href: string, mode: "login" | "register", redirectTarget?: string) {
+  if (mode !== "login" || !redirectTarget || redirectTarget === "/") {
+    return href
+  }
+
+  const separator = href.includes("?") ? "&" : "?"
+  return `${href}${separator}redirectTo=${encodeURIComponent(redirectTarget)}`
+}
+
+export function ExternalAuthEntry({ settings, mode, addonEntries = [], className, redirectTarget }: ExternalAuthEntryProps) {
   const items = [
     settings.authGithubEnabled ? {
       key: "github",
       label: mode === "login" ? "GitHub" : "GitHub",
-      href: `/api/auth/oauth/github/start?mode=${mode}`,
+      href: withRedirectTarget(`/api/auth/oauth/github/start?mode=${mode}`, mode, redirectTarget),
       icon: <Github data-icon="inline-start" />,
       useDocumentNavigation: true,
     } : null,
     settings.authGoogleEnabled ? {
       key: "google",
       label: mode === "login" ? "Google" : "Google",
-      href: `/api/auth/oauth/google/start?mode=${mode}`,
+      href: withRedirectTarget(`/api/auth/oauth/google/start?mode=${mode}`, mode, redirectTarget),
       icon: <Chrome data-icon="inline-start" />,
       useDocumentNavigation: true,
     } : null,
     settings.authPasskeyEnabled ? {
       key: "passkey",
       label: mode === "login" ? "Passkey" : "Passkey",
-      href: `/auth/passkey?mode=${mode}`,
+      href: withRedirectTarget(`/auth/passkey?mode=${mode}`, mode, redirectTarget),
       icon: <KeyRound data-icon="inline-start" />,
       useDocumentNavigation: false,
     } : null,

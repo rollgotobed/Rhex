@@ -54,6 +54,7 @@ export function findBadgeEligibilityUserSnapshot(userId: number) {
         postCount: true,
         commentCount: true,
         likeReceivedCount: true,
+        godCommentCount: true,
         inviteCount: true,
         acceptedAnswerCount: true,
         level: true,

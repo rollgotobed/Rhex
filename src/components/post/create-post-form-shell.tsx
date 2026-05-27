@@ -17,6 +17,7 @@ import { AddonEditor } from "@/components/addon-editor"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
 import { Tooltip } from "@/components/ui/tooltip"
+import { showConfirm } from "@/components/ui/alert-dialog"
 import { PostDraftBox } from "@/components/post/post-draft-box"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
 import type { AccessThresholdOption } from "@/lib/access-threshold-options"
@@ -140,6 +141,7 @@ export function CreatePostFormShell({
     handleRestorePendingDraft,
     handleManualDraftSave,
     handleClearDraft,
+    handleClearDraftBox,
     handleRestoreDraftFromBox,
     handleDeleteDraftFromBox,
     removeManualTag,
@@ -746,6 +748,21 @@ export function CreatePostFormShell({
             setDraftBoxModalOpen(false)
           }}
           onDelete={handleDeleteDraftFromBox}
+          onClearAll={async () => {
+            const confirmed = await showConfirm({
+              title: "清空草稿箱",
+              description: "这会删除当前页面保存的全部本地草稿，无法恢复。",
+              confirmText: "清空草稿箱",
+              cancelText: "取消",
+              variant: "danger",
+            })
+
+            if (!confirmed) {
+              return
+            }
+
+            handleClearDraftBox()
+          }}
         />
       </Modal>
     </form>

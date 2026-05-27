@@ -152,6 +152,7 @@ export interface SiteCommentItem {
   floor: number
   isAcceptedAnswer: boolean
   isPinnedByAuthor: boolean
+  isGodComment: boolean
   replies: SiteCommentReplyItem[]
 }
 
@@ -331,6 +332,7 @@ export async function getCommentsByPostId(
       tipTotalPoints: number
       isAcceptedAnswer: boolean
       isPinnedByAuthor: boolean
+      isGodComment: boolean
       createdAt: Date
       user: CommentQueryUser
       privateRecipient?: CommentQueryUser | null
@@ -505,6 +507,7 @@ export async function getCommentsByPostId(
         floor,
         isAcceptedAnswer: comment.isAcceptedAnswer,
         isPinnedByAuthor: comment.isPinnedByAuthor,
+        isGodComment: comment.isGodComment,
         replies,
       }
     }

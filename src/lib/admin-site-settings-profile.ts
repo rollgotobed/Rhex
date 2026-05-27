@@ -8,7 +8,7 @@ import { finalizeSiteSettingsUpdate, type SiteSettingsRecord } from "@/lib/admin
 import { normalizeMarkdownEmojiItems, serializeMarkdownEmojiItems } from "@/lib/markdown-emoji"
 import { normalizePostListLoadMode } from "@/lib/post-list-load-mode"
 import { normalizePostListDisplayMode } from "@/lib/post-list-display"
-import { mergeFooterCopyrightSettings, mergeHomeFeedPostListLoadSettings, mergeHomeSidebarAnnouncementSettings, mergeLeftSidebarDisplaySettings, mergePostPageSizeSettings, mergePostSlugGenerationSettings, mergeSiteBrandingSettings, mergeThemeCustomizationSettings, mergeUserProfileDisplaySettings, normalizeLeftSidebarDisplayMode, normalizePostSlugGenerationMode, resolveFooterCopyrightSettings, resolveHomeFeedPostListLoadSettings, resolveHomeSidebarAnnouncementSettings, resolveLeftSidebarDisplaySettings, resolvePostPageSizeSettings, resolvePostSlugGenerationSettings, resolveSiteBrandingSettings, resolveThemeCustomizationSettingsFromAppState, resolveUserProfileDisplaySettings } from "@/lib/site-settings-app-state"
+import { mergeFooterCopyrightSettings, mergeHomeFeedPostListLoadSettings, mergeHomeSidebarAnnouncementSettings, mergeLeftSidebarDisplaySettings, mergeLeftSidebarHomeSettings, mergePostPageSizeSettings, mergePostSlugGenerationSettings, mergeSiteBrandingSettings, mergeThemeCustomizationSettings, mergeUserProfileDisplaySettings, normalizeLeftSidebarDisplayMode, normalizeLeftSidebarHomeSettings, normalizePostSlugGenerationMode, resolveFooterCopyrightSettings, resolveHomeFeedPostListLoadSettings, resolveHomeSidebarAnnouncementSettings, resolveLeftSidebarDisplaySettings, resolveLeftSidebarHomeSettings, resolvePostPageSizeSettings, resolvePostSlugGenerationSettings, resolveSiteBrandingSettings, resolveThemeCustomizationSettingsFromAppState, resolveUserProfileDisplaySettings } from "@/lib/site-settings-app-state"
 import { mergeTopHeaderAppLinks, normalizeHeaderAppIconName, normalizeSiteHeaderAppLinks } from "@/lib/site-header-app-links"
 import { mergeSiteSearchSettings, resolveSiteSearchSettings } from "@/lib/site-search-settings"
 import { normalizeFooterLinks } from "@/lib/shared/config-parsers"
@@ -52,6 +52,12 @@ export async function updateProfileSiteSettingsSection(existing: SiteSettingsRec
       modeFallback: "DEFAULT",
     })
     const leftSidebarDisplayMode = normalizeLeftSidebarDisplayMode(body.leftSidebarDisplayMode, existingLeftSidebarDisplaySettings.mode)
+    const existingLeftSidebarHomeSettings = resolveLeftSidebarHomeSettings({
+      appStateJson: existing.appStateJson,
+    })
+    const leftSidebarHomeSettings = body.leftSidebarHome === undefined
+      ? existingLeftSidebarHomeSettings
+      : normalizeLeftSidebarHomeSettings(body.leftSidebarHome, existingLeftSidebarHomeSettings)
     const existingHomeFeedPostListLoadSettings = resolveHomeFeedPostListLoadSettings({
       appStateJson: existing.appStateJson,
       loadModeFallback: normalizePostListLoadMode(undefined),
@@ -124,7 +130,9 @@ export async function updateProfileSiteSettingsSection(existing: SiteSettingsRec
       mode: leftSidebarDisplayMode,
     })
 
-    const appStateWithPostSlugGeneration = mergePostSlugGenerationSettings(appStateWithLeftSidebarDisplay, {
+    const appStateWithLeftSidebarHome = mergeLeftSidebarHomeSettings(appStateWithLeftSidebarDisplay, leftSidebarHomeSettings)
+
+    const appStateWithPostSlugGeneration = mergePostSlugGenerationSettings(appStateWithLeftSidebarHome, {
       mode: postSlugGenerationMode,
     })
 

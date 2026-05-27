@@ -808,7 +808,7 @@ function InlineStatBlock({ label, value, icon, href }: { label: string; value: n
   const content = (
     <>
       <div className="flex items-center justify-center gap-1 text-sm font-semibold leading-none text-foreground">
-        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-background text-muted-foreground">
+        <span className="flex size-4 items-center justify-center rounded-full bg-background text-muted-foreground">
           {icon}
         </span>
         <span>{value}</span>

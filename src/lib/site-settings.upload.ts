@@ -6,6 +6,7 @@ export interface SiteSettingsMarkdownEmojiItem {
   label: string
   icon: string
   group?: string
+  displaySize?: number
 }
 
 export interface SiteSettingsUploadData {

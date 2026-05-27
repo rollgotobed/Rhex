@@ -16,6 +16,7 @@ import type {
   HomeSidebarAnnouncementSettings,
   LeftSidebarDisplayMode,
   LeftSidebarDisplaySettings,
+  LeftSidebarHomeSettings,
   PostPageSizeSettings,
   PostSlugGenerationMode,
   PostSlugGenerationSettings,
@@ -235,6 +236,46 @@ export function mergeLeftSidebarDisplaySettings(
     leftSidebarDisplay: {
       mode: normalizeLeftSidebarDisplayMode(input.mode),
     },
+  })
+}
+
+export function normalizeLeftSidebarHomeSettings(
+  value: unknown,
+  fallback: LeftSidebarHomeSettings = {
+    enabled: true,
+    name: "首页",
+    icon: "🏠",
+  },
+): LeftSidebarHomeSettings {
+  const source = isRecord(value) ? value : {}
+  const name = typeof source.name === "string" ? source.name.trim().slice(0, 24) : ""
+  const icon = typeof source.icon === "string" ? source.icon.trim().slice(0, 12) : ""
+
+  return {
+    enabled: typeof source.enabled === "boolean" ? source.enabled : fallback.enabled,
+    name: name || fallback.name,
+    icon: icon || fallback.icon,
+  }
+}
+
+export function resolveLeftSidebarHomeSettings(options: {
+  appStateJson?: string | null
+  fallback?: LeftSidebarHomeSettings
+} = {}): LeftSidebarHomeSettings {
+  const siteSettingsState = readSiteSettingsState(options.appStateJson)
+  return normalizeLeftSidebarHomeSettings(siteSettingsState.leftSidebarHome, options.fallback)
+}
+
+export function mergeLeftSidebarHomeSettings(
+  appStateJson: string | null | undefined,
+  input: LeftSidebarHomeSettings,
+) {
+  const siteSettingsState = readSiteSettingsState(appStateJson)
+  const normalized = normalizeLeftSidebarHomeSettings(input)
+
+  return writeSiteSettingsState(appStateJson, {
+    ...siteSettingsState,
+    leftSidebarHome: normalized,
   })
 }
 

@@ -278,6 +278,7 @@ enum BadgeRuleType {
   POST_COUNT
   COMMENT_COUNT
   RECEIVED_LIKE_COUNT
+  GOD_COMMENT_COUNT
   INVITE_COUNT
   ACCEPTED_ANSWER_COUNT
   SENT_TIP_COUNT
@@ -305,6 +306,11 @@ enum BadgeRuleOperator {
 enum BadgeGrantSource {
   SELF_CLAIM
   ADMIN_GRANT
+}
+
+enum GodCommentSource {
+  AUTO_LIKE
+  ADMIN
 }
 
 enum VerificationChannel {
@@ -469,6 +475,7 @@ model User {
   postCount                        Int                            @default(0)
   commentCount                     Int                            @default(0)
   likeReceivedCount                Int                            @default(0)
+  godCommentCount                  Int                            @default(0)
   inviteCount                      Int                            @default(0)
   acceptedAnswerCount              Int                            @default(0)
   inviterId                        Int?
@@ -542,6 +549,7 @@ model User {
   verificationApplications         UserVerification[]             @relation("userVerificationApplicant")
   reviewedVerifications            UserVerification[]             @relation("userVerificationReviewer")
   reviewedComments                 Comment[]                      @relation("commentReviewer")
+  godCommentedComments             Comment[]                      @relation("commentGodCommentMarker")
   rssReviewedEntries               RssEntry[]                     @relation("rssEntryReviewer")
   rssEntryLikes                    RssEntryLike[]
   rssEntryTips                     RssEntryTip[]                  @relation("RssEntryTipSender")
@@ -1026,6 +1034,13 @@ model Post {
   @@index([status, likeCount, commentCount, createdAt])
 }
 
+model PostSlugCounter {
+  id        String   @id
+  nextValue BigInt   @default(1)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+}
+
 model Tag {
   id        String      @id @default(cuid())
   name      String      @unique
@@ -1107,6 +1122,10 @@ model Comment {
   tipTotalPoints         Int                    @default(0)
   isAcceptedAnswer       Boolean                @default(false)
   isPinnedByAuthor       Boolean                @default(false)
+  isGodComment           Boolean                @default(false)
+  godCommentSource       GodCommentSource?
+  godCommentedById       Int?
+  godCommentedAt         DateTime?              @db.Timestamptz(3)
   acceptedAt             DateTime?              @db.Timestamptz(3)
   bountyAcceptedForPost  Post?                  @relation("AcceptedBountyComment")
   createdAt              DateTime               @default(now()) @db.Timestamptz(3)
@@ -1120,6 +1139,7 @@ model Comment {
   privateRecipient       User?                  @relation("privateCommentRecipient", fields: [privateRecipientUserId], references: [id], onDelete: SetNull)
   quotedReplies          Comment[]              @relation("CommentReplyTargets")
   reviewer               User?                  @relation("commentReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  godCommentedBy         User?                  @relation("commentGodCommentMarker", fields: [godCommentedById], references: [id], onDelete: SetNull)
   likes                  Like[]
   tips                   PostTip[]
   giftEvents             PostGiftEvent[]
@@ -1137,9 +1157,10 @@ model Comment {
   @@index([privateRecipientUserId])
   @@index([postId, status, createdAt])
   @@index([postId, status, parentId, createdAt])
-  @@index([postId, status, parentId, isPinnedByAuthor, createdAt, id], map: "comment_thread_order_idx")
-  @@index([postId, status, isPinnedByAuthor, createdAt, id], map: "comment_flat_order_idx")
+  @@index([postId, status, parentId, isGodComment, isPinnedByAuthor, createdAt, id], map: "comment_thread_order_idx")
+  @@index([postId, status, isGodComment, isPinnedByAuthor, createdAt, id], map: "comment_flat_order_idx")
   @@index([reviewedById, reviewedAt])
+  @@index([godCommentedById, godCommentedAt])
 }
 
 model Like {
@@ -2037,6 +2058,7 @@ model SiteSetting {
   nicknameChangePointCost       Int      @default(0)
   postEditableMinutes           Int      @default(10)
   commentEditableMinutes        Int      @default(5)
+  godCommentAutoLikeThreshold   Int      @default(10)
   tippingEnabled                Boolean  @default(false)
   tippingDailyLimit             Int      @default(3)
   tippingPerPostLimit           Int      @default(1)

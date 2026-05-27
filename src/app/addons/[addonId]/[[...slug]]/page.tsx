@@ -6,6 +6,7 @@ import { HomeSidebarPanels } from "@/components/home/home-sidebar-panels"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { SiteFooter } from "@/components/site-footer"
 import { SiteHeader } from "@/components/site-header"
+import { SiteSettingsProvider } from "@/components/site-settings-provider"
 import { getHomeAnnouncements } from "@/lib/announcements"
 import { getCurrentUser } from "@/lib/auth"
 import { getBoards } from "@/lib/boards"
@@ -159,11 +160,16 @@ export default async function AddonPublicPage({ params, searchParams }: AddonPag
         {showLeftSidebar || showRightSidebar ? (
           <div className={shellClassName}>
             {showLeftSidebar ? (
-              <SidebarNavigation
-                zones={zones}
-                boards={boards}
-                displayMode={settings?.leftSidebarDisplayMode ?? "DEFAULT"}
-              />
+              <SiteSettingsProvider
+                leftSidebarHome={settings?.leftSidebarHome}
+                leftSidebarDisplayMode={settings?.leftSidebarDisplayMode ?? "DEFAULT"}
+              >
+                <SidebarNavigation
+                  zones={zones}
+                  boards={boards}
+                  displayMode={settings?.leftSidebarDisplayMode ?? "DEFAULT"}
+                />
+              </SiteSettingsProvider>
             ) : null}
             <div className="min-w-0">
               {mainContent}

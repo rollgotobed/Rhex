@@ -5,6 +5,7 @@ import { setAccountBindingFlash } from "@/lib/account-binding-flash"
 import { getCurrentUser } from "@/lib/auth"
 import { attachAuthenticatedSession, connectExternalAuthIdentityToUser, createOAuthIdentity, recordSuccessfulExternalLogin, resolveExternalAuth } from "@/lib/external-auth-service"
 import { fetchOAuthUserProfile, isExternalAuthProvider, validateOAuthAuthorizationCode } from "@/lib/auth-provider-config"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 import { toAbsoluteSiteUrl } from "@/lib/site-origin"
 import { getServerSiteSettings } from "@/lib/site-settings"
 
@@ -28,6 +29,7 @@ export async function GET(request: Request, props: OAuthProviderRouteProps) {
   }
 
   const oauthState = await readOAuthFlowState(params.provider)
+  const loginRedirectTarget = normalizeAuthRedirectTarget(oauthState?.redirectTo)
   const fallbackTarget = oauthState?.mode === "register"
     ? "/register"
     : oauthState?.mode === "connect"
@@ -88,11 +90,14 @@ export async function GET(request: Request, props: OAuthProviderRouteProps) {
       const response = NextResponse.redirect(await buildRedirectUrl("/auth/complete"))
       clearOAuthFlowState(response, params.provider, request)
       clearPendingExternalAuthState(response, request)
-      await setPendingExternalAuthState(response, result.state, request)
+      await setPendingExternalAuthState(response, {
+        ...result.state,
+        redirectTo: loginRedirectTarget,
+      }, request)
       return response
     }
 
-    const response = NextResponse.redirect(await buildRedirectUrl("/"))
+    const response = NextResponse.redirect(await buildRedirectUrl(loginRedirectTarget))
     clearOAuthFlowState(response, params.provider, request)
     clearPendingExternalAuthState(response, request)
 

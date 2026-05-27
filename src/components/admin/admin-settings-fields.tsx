@@ -55,6 +55,9 @@ export function SettingsInputField({
   onChange,
   placeholder,
   type = "text",
+  min,
+  max,
+  step,
   description,
   required = false,
   className,
@@ -65,6 +68,9 @@ export function SettingsInputField({
   onChange: (value: string) => void
   placeholder?: string
   type?: React.HTMLInputTypeAttribute
+  min?: string | number
+  max?: string | number
+  step?: string | number
   description?: string
   required?: boolean
   className?: string
@@ -78,6 +84,9 @@ export function SettingsInputField({
         value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
+        min={min}
+        max={max}
+        step={step}
         required={required}
         className={cn("h-11 rounded-xl bg-background px-4 text-sm", inputClassName)}
       />

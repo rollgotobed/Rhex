@@ -42,6 +42,7 @@ export const siteSettingsSelect = {
   nicknameChangePointCost: true,
   postEditableMinutes: true,
   commentEditableMinutes: true,
+  godCommentAutoLikeThreshold: true,
   tippingEnabled: true,
   tippingDailyLimit: true,
   tippingPerPostLimit: true,

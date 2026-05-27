@@ -550,6 +550,7 @@ type SpoilerInsertPanelProps = FloatingPanelBaseProps & {
   onClose: () => void
   onInsertSpoiler: () => void
   onInsertScratchMask: () => void
+  onItemPointerDown: (event: React.PointerEvent<HTMLElement>) => void
   onItemMouseDown: (event: React.MouseEvent<HTMLElement>) => void
 }
 
@@ -564,6 +565,7 @@ export function SpoilerInsertPanel({
   onClose,
   onInsertSpoiler,
   onInsertScratchMask,
+  onItemPointerDown,
   onItemMouseDown,
 }: SpoilerInsertPanelProps) {
   return (
@@ -591,6 +593,7 @@ export function SpoilerInsertPanel({
           type="button"
           variant="outline"
           className="h-auto flex-col items-start gap-1 rounded-xl px-3 py-3 text-left"
+          onPointerDown={onItemPointerDown}
           onMouseDown={onItemMouseDown}
           onClick={() => {
             onInsertSpoiler()
@@ -604,6 +607,7 @@ export function SpoilerInsertPanel({
           type="button"
           variant="outline"
           className="h-auto flex-col items-start gap-1 rounded-xl px-3 py-3 text-left"
+          onPointerDown={onItemPointerDown}
           onMouseDown={onItemMouseDown}
           onClick={() => {
             onInsertScratchMask()
@@ -773,7 +777,7 @@ export function ImageInsertPanel({
                 className="rounded-full px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-accent"
                 onClick={() => {
                   onContinueUpload()
-                  requestAnimationFrame(() => fileInputRef.current?.click())
+                  fileInputRef.current?.click()
                 }}
               >
                 继续上传

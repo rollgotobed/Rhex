@@ -214,12 +214,15 @@ export function CommentReviewStatusNotice({ status, reviewNote, isAdmin, isOwner
   )
 }
 
-export function buildCommentAdminActions({ entry, isAdmin, adminRole, canPinComment = false, pinningCommentId = null, currentUserId, canOfflineOwnComment = false, canOfflineUserComment = false }: { entry: ThreadEntry; isAdmin: boolean; adminRole?: "ADMIN" | "MODERATOR" | null; canPinComment?: boolean; pinningCommentId?: string | null; currentUserId?: number; canOfflineOwnComment?: boolean; canOfflineUserComment?: boolean }) {
+export function buildCommentAdminActions({ entry, isAdmin, adminRole, canPinComment = false, pinningCommentId = null, markingGodCommentId = null, currentUserId, canOfflineOwnComment = false, canOfflineUserComment = false }: { entry: ThreadEntry; isAdmin: boolean; adminRole?: "ADMIN" | "MODERATOR" | null; canPinComment?: boolean; pinningCommentId?: string | null; markingGodCommentId?: string | null; currentUserId?: number; canOfflineOwnComment?: boolean; canOfflineUserComment?: boolean }) {
   const actions: CommentAdminAction[] = []
   const canRestrictEntryAuthor = adminRole === "ADMIN"
     ? entry.authorRole !== "ADMIN"
     : entry.authorRole === "USER"
   const canRestoreEntryAuthor = adminRole === "ADMIN" || entry.authorRole === "USER"
+  if (isAdmin && entry.status === "NORMAL" && "isGodComment" in entry) {
+    actions.push({ key: entry.isGodComment ? "comment.unmarkGod" : "comment.markGod", label: markingGodCommentId === entry.id ? "处理中..." : entry.isGodComment ? "取消神评" : "设为神评", targetId: entry.id, disabled: markingGodCommentId === entry.id })
+  }
   if (canPinComment && "isPinnedByAuthor" in entry) {
     actions.push({ key: entry.isPinnedByAuthor ? "comment.unpinByAuthor" : "comment.pinByAuthor", label: pinningCommentId === entry.id ? "处理中..." : entry.isPinnedByAuthor ? "取消置顶" : "置顶评论", targetId: entry.id, disabled: pinningCommentId === entry.id })
   }

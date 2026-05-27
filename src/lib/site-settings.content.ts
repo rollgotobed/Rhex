@@ -4,6 +4,7 @@ import type { SiteTippingGiftItem } from "@/lib/tipping-gifts"
 export interface SiteSettingsContentData {
   postEditableMinutes: number
   commentEditableMinutes: number
+  godCommentAutoLikeThreshold: number
   guestCanViewComments: boolean
   commentInitialVisibleReplies: number
   anonymousPostEnabled: boolean

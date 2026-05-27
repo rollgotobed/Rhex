@@ -376,7 +376,8 @@ function buildCommentPositionOrderSql(order: CommentPositionOrder) {
   }
 
   const samePinnedOldestSql = Prisma.sql`
-    c."isPinnedByAuthor" = t."isPinnedByAuthor"
+    c."isGodComment" = t."isGodComment"
+    AND c."isPinnedByAuthor" = t."isPinnedByAuthor"
     AND (
       c."createdAt" < t."createdAt"
       OR (c."createdAt" = t."createdAt" AND c."id" <= t."id")
@@ -386,9 +387,15 @@ function buildCommentPositionOrderSql(order: CommentPositionOrder) {
   if (order === "flat-newest") {
     return Prisma.sql`
       (
-        (c."isPinnedByAuthor" = TRUE AND t."isPinnedByAuthor" = FALSE)
+        (c."isGodComment" = TRUE AND t."isGodComment" = FALSE)
         OR (
-          c."isPinnedByAuthor" = t."isPinnedByAuthor"
+          c."isGodComment" = t."isGodComment"
+          AND c."isPinnedByAuthor" = TRUE
+          AND t."isPinnedByAuthor" = FALSE
+        )
+        OR (
+          c."isGodComment" = t."isGodComment"
+          AND c."isPinnedByAuthor" = t."isPinnedByAuthor"
           AND (
             c."createdAt" > t."createdAt"
             OR (c."createdAt" = t."createdAt" AND c."id" >= t."id")
@@ -398,12 +405,19 @@ function buildCommentPositionOrderSql(order: CommentPositionOrder) {
     `
   }
 
-  return Prisma.sql`
-    (
-      (c."isPinnedByAuthor" = TRUE AND t."isPinnedByAuthor" = FALSE)
-      OR (${samePinnedOldestSql})
-    )
-  `
+  if (order === "root-oldest" || order === "flat-oldest") {
+    return Prisma.sql`
+      (
+        (c."isGodComment" = TRUE AND t."isGodComment" = FALSE)
+        OR (
+          c."isGodComment" = t."isGodComment"
+          AND c."isPinnedByAuthor" = TRUE
+          AND t."isPinnedByAuthor" = FALSE
+        )
+        OR (${samePinnedOldestSql})
+      )
+    `
+  }
 }
 
 async function findCommentPositionsByPostId(params: CommentPositionQueryParams): Promise<CommentPositionRow[]> {
@@ -422,6 +436,7 @@ async function findCommentPositionsByPostId(params: CommentPositionQueryParams):
       SELECT
         t."id",
         t."createdAt",
+        t."isGodComment",
         t."isPinnedByAuthor"
       FROM "Comment" AS t
       WHERE ${buildCommentRankWhereSql("t", params)}
@@ -492,6 +507,32 @@ export async function findFlatCommentPositionLookupsByPostId(params: {
   }
 }
 
+export async function findCommentPositionByPostId(params: {
+  postId: string
+  commentId: string
+  sort: "oldest" | "newest"
+  pageSize: number
+  parentOnly?: boolean
+  viewerUserId?: number
+  includeHidden?: boolean
+  includePendingOwn?: boolean
+  includePendingAll?: boolean
+}): Promise<CommentPositionRow | null> {
+  const [position] = await findCommentPositionsByPostId({
+    postId: params.postId,
+    commentIds: [params.commentId],
+    pageSize: params.pageSize,
+    order: params.sort === "newest" ? "flat-newest" : "flat-oldest",
+    parentOnly: params.parentOnly,
+    viewerUserId: params.viewerUserId,
+    includeHidden: params.includeHidden,
+    includePendingOwn: params.includePendingOwn,
+    includePendingAll: params.includePendingAll,
+  })
+
+  return position ?? null
+}
+
 export function countRootCommentsByPostId(params: {
   postId: string
   viewerUserId?: number
@@ -543,6 +584,7 @@ export async function findRootCommentPageById(params: {
     select: {
       id: true,
       createdAt: true,
+      isGodComment: true,
       isPinnedByAuthor: true,
     },
   })
@@ -556,28 +598,25 @@ export async function findRootCommentPageById(params: {
       postId: params.postId,
       status: CommentStatus.NORMAL,
       parentId: null,
-      OR: rootComment.isPinnedByAuthor
-        ? [
-            { isPinnedByAuthor: true, createdAt: { lt: rootComment.createdAt } },
-            { isPinnedByAuthor: true, createdAt: rootComment.createdAt, id: { lt: rootComment.id } },
-          ]
-        : [
-            { isPinnedByAuthor: true },
-            { isPinnedByAuthor: false, createdAt: { lt: rootComment.createdAt } },
-            { isPinnedByAuthor: false, createdAt: rootComment.createdAt, id: { lt: rootComment.id } },
-          ],
+      OR: [
+        ...(rootComment.isGodComment ? [] : [{ isGodComment: true }]),
+        ...(rootComment.isPinnedByAuthor ? [] : [{ isGodComment: rootComment.isGodComment, isPinnedByAuthor: true }]),
+        {
+          isGodComment: rootComment.isGodComment,
+          isPinnedByAuthor: rootComment.isPinnedByAuthor,
+          createdAt: params.sort === "newest" ? { gt: rootComment.createdAt } : { lt: rootComment.createdAt },
+        },
+        {
+          isGodComment: rootComment.isGodComment,
+          isPinnedByAuthor: rootComment.isPinnedByAuthor,
+          createdAt: rootComment.createdAt,
+          id: params.sort === "newest" ? { gt: rootComment.id } : { lt: rootComment.id },
+        },
+      ],
     },
   })
 
-  const totalRootComments = await countRootCommentsByPostId({ postId: params.postId })
-  const oldestPage = Math.max(1, Math.ceil((precedingCount + 1) / normalizedPageSize))
-
-  if (params.sort === "oldest") {
-    return oldestPage
-  }
-
-  const newestIndex = totalRootComments - precedingCount
-  return Math.max(1, Math.ceil(newestIndex / normalizedPageSize))
+  return Math.max(1, Math.ceil((precedingCount + 1) / normalizedPageSize))
 }
 
 export function findRootCommentsByPostId(params: {
@@ -602,8 +641,10 @@ export function findRootCommentsByPostId(params: {
     },
     include: buildCommentListInclude(params.viewerUserId),
     orderBy: [
+      { isGodComment: "desc" },
       { isPinnedByAuthor: "desc" },
       { createdAt: params.sort === "newest" ? "desc" : "asc" },
+      { id: params.sort === "newest" ? "desc" : "asc" },
     ],
     skip: (params.page - 1) * normalizedPageSize,
     take: normalizedPageSize,
@@ -628,6 +669,7 @@ export function findAllRootCommentIdsByPostId(params: {
       id: true,
     },
     orderBy: [
+      { isGodComment: "desc" },
       { isPinnedByAuthor: "desc" },
       { createdAt: "asc" },
       { id: "asc" },
@@ -676,6 +718,7 @@ export function findAllFlatCommentIdsByPostId(params: {
       id: true,
     },
     orderBy: [
+      { isGodComment: "desc" },
       { isPinnedByAuthor: "desc" },
       { createdAt: params.sort === "newest" ? "desc" : "asc" },
       { id: params.sort === "newest" ? "desc" : "asc" },
@@ -728,6 +771,7 @@ export function findFlatCommentsByPostId(params: {
     },
     include: buildFlatCommentInclude(params.viewerUserId),
     orderBy: [
+      { isGodComment: "desc" },
       { isPinnedByAuthor: "desc" },
       { createdAt: params.sort === "newest" ? "desc" : "asc" },
       { id: params.sort === "newest" ? "desc" : "asc" },

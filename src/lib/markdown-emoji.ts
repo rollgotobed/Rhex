@@ -3,6 +3,7 @@ export interface MarkdownEmojiItem {
   label: string
   icon: string
   group?: string
+  displaySize?: number
 }
 
 const SHORTCODE_PATTERN = /^[a-z0-9][a-z0-9_-]{0,31}$/i
@@ -12,6 +13,8 @@ const DATA_IMAGE_PATTERN = /^data:image\//i
 const BLOB_URL_PATTERN = /^blob:/i
 const LOCAL_ASSET_PATTERN = /^(\/|\.\/|\.\.\/)/
 const MARKDOWN_EMOJI_GROUP_MAX_LENGTH = 24
+export const MARKDOWN_EMOJI_DISPLAY_SIZE_MIN = 0.75
+export const MARKDOWN_EMOJI_DISPLAY_SIZE_MAX = 6
 
 export const DEFAULT_MARKDOWN_EMOJI_GROUP = "默认"
 
@@ -31,6 +34,33 @@ function normalizeShortcode(value: string) {
 export function normalizeMarkdownEmojiGroup(value: unknown) {
   const group = String(value ?? "").trim().slice(0, MARKDOWN_EMOJI_GROUP_MAX_LENGTH)
   return group || DEFAULT_MARKDOWN_EMOJI_GROUP
+}
+
+export function normalizeMarkdownEmojiDisplaySize(value: unknown) {
+  if (typeof value !== "number" && typeof value !== "string") {
+    return undefined
+  }
+
+  if (typeof value === "string" && !value.trim()) {
+    return undefined
+  }
+
+  const numericValue = typeof value === "number" ? value : Number(value.trim())
+  if (!Number.isFinite(numericValue)) {
+    return undefined
+  }
+
+  const clampedValue = Math.min(
+    MARKDOWN_EMOJI_DISPLAY_SIZE_MAX,
+    Math.max(MARKDOWN_EMOJI_DISPLAY_SIZE_MIN, numericValue),
+  )
+
+  return Math.round(clampedValue * 100) / 100
+}
+
+export function formatMarkdownEmojiDisplaySize(value: unknown) {
+  const normalizedValue = normalizeMarkdownEmojiDisplaySize(value)
+  return typeof normalizedValue === "number" ? String(normalizedValue) : ""
 }
 
 function isSvgMarkup(value: string) {
@@ -73,6 +103,15 @@ function buildSvgMarkup(svg: string) {
   return svg.trim()
 }
 
+function buildMarkdownEmojiDisplaySizeAttributes(displaySize: MarkdownEmojiItem["displaySize"]) {
+  const value = formatMarkdownEmojiDisplaySize(displaySize)
+  if (!value) {
+    return ""
+  }
+
+  return ` data-display-size="${value}" style="--md-emoji-size: ${value}em"`
+}
+
 export function normalizeOptionalMarkdownEmojiItems(
   input: unknown,
   fallback: MarkdownEmojiItem[] = [],
@@ -94,11 +133,13 @@ export function normalizeOptionalMarkdownEmojiItems(
       }
 
       seen.add(shortcode)
+      const displaySize = normalizeMarkdownEmojiDisplaySize(row.displaySize)
       return {
         shortcode,
         label: label || shortcode,
         icon,
         group: normalizeMarkdownEmojiGroup(row.group),
+        ...(typeof displaySize === "number" ? { displaySize } : {}),
       }
     })
     .filter(Boolean) as MarkdownEmojiItem[]
@@ -139,14 +180,15 @@ export function renderMarkdownEmojiHtml(shortcode: string, items: MarkdownEmojiI
   }
 
   const title = escapeHtml(matched.label)
+  const displaySizeAttributes = buildMarkdownEmojiDisplaySizeAttributes(matched.displaySize)
 
   if (isSvgMarkup(matched.icon)) {
-    return `<span class="md-emoji md-emoji-svg" data-shortcode="${matched.shortcode}" title="${title}" aria-label="${title}"><span class="md-emoji-icon">${buildSvgMarkup(matched.icon)}</span></span>`
+    return `<span class="md-emoji md-emoji-svg"${displaySizeAttributes} data-shortcode="${matched.shortcode}" title="${title}" aria-label="${title}"><span class="md-emoji-icon">${buildSvgMarkup(matched.icon)}</span></span>`
   }
 
   if (isImageSource(matched.icon)) {
-    return `<span class="md-emoji md-emoji-image" data-shortcode="${matched.shortcode}" title="${title}" aria-label="${title}"><img class="md-emoji-icon" src="${escapeHtml(matched.icon)}" alt="${title}" loading="lazy" decoding="async" /></span>`
+    return `<span class="md-emoji md-emoji-image"${displaySizeAttributes} data-shortcode="${matched.shortcode}" title="${title}" aria-label="${title}"><img class="md-emoji-icon" src="${escapeHtml(matched.icon)}" alt="${title}" loading="lazy" decoding="async" /></span>`
   }
 
-  return `<span class="md-emoji md-emoji-text" data-shortcode="${matched.shortcode}" title="${title}" aria-label="${title}">${escapeHtml(matched.icon)}</span>`
+  return `<span class="md-emoji md-emoji-text"${displaySizeAttributes} data-shortcode="${matched.shortcode}" title="${title}" aria-label="${title}">${escapeHtml(matched.icon)}</span>`
 }

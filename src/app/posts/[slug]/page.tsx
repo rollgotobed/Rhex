@@ -592,7 +592,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
 
 
                             {displayPost.poll ? <PollPanel postId={displayPost.id} totalVotes={displayPost.poll.totalVotes} hasVoted={displayPost.poll.hasVoted} expiresAt={displayPost.poll.expiresAt} options={displayPost.poll.options} /> : null}
-                            {displayAttachments.length > 0 ? <PostAttachmentList attachments={displayAttachments} pointName={settings.pointName} /> : null}
+                            {displayAttachments.length > 0 ? <PostAttachmentList postId={displayPost.id} attachments={displayAttachments} pointName={settings.pointName} /> : null}
                           </AddonSurfaceRenderer>
                         <AddonSlotRenderer slot="post.body.after" />
                         {displayPost.lottery || displayPost.auction ? (

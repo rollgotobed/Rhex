@@ -7,6 +7,7 @@ import {
   MoveRight,
   Pencil,
   Plus,
+  Ruler,
   RotateCcw,
   Trash2,
   Upload,
@@ -26,7 +27,11 @@ import { saveAdminSiteSettings, uploadAdminMarkdownEmojiFiles } from "@/lib/admi
 import {
   DEFAULT_MARKDOWN_EMOJI_GROUP,
   DEFAULT_MARKDOWN_EMOJI_ITEMS,
+  MARKDOWN_EMOJI_DISPLAY_SIZE_MAX,
+  MARKDOWN_EMOJI_DISPLAY_SIZE_MIN,
   type MarkdownEmojiItem,
+  formatMarkdownEmojiDisplaySize,
+  normalizeMarkdownEmojiDisplaySize,
   normalizeMarkdownEmojiGroup,
   normalizeMarkdownEmojiItems,
   normalizeOptionalMarkdownEmojiItems,
@@ -56,6 +61,16 @@ function cloneDefaultMarkdownEmojiItems() {
 
 function getEmojiGroup(item: MarkdownEmojiItem) {
   return normalizeMarkdownEmojiGroup(item.group)
+}
+
+function withEmojiDisplaySize(item: MarkdownEmojiItem, displaySize: number | undefined): MarkdownEmojiItem {
+  if (typeof displaySize === "number") {
+    return { ...item, displaySize }
+  }
+
+  const next = { ...item }
+  delete next.displaySize
+  return next
 }
 
 function normalizeEditableShortcode(value: string) {
@@ -125,6 +140,20 @@ function buildGroupSummaries(items: MarkdownEmojiItem[]) {
   })
 }
 
+function getUnifiedDisplaySize(items: MarkdownEmojiItem[]) {
+  if (items.length === 0) {
+    return ""
+  }
+
+  const values = items.map((item) => formatMarkdownEmojiDisplaySize(item.displaySize))
+  const firstValue = values[0] ?? ""
+  return values.every((value) => value === firstValue) ? firstValue : ""
+}
+
+function hasMixedDisplaySizes(items: MarkdownEmojiItem[]) {
+  return new Set(items.map((item) => formatMarkdownEmojiDisplaySize(item.displaySize))).size > 1
+}
+
 export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEmojiSettingsFormProps) {
   const router = useRouter()
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
@@ -132,6 +161,7 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
   const [activeGroup, setActiveGroup] = useState(() => normalizeMarkdownEmojiGroup(initialItems[0]?.group))
   const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(() => new Set())
   const [groupDraft, setGroupDraft] = useState("")
+  const [groupDisplaySizeDraft, setGroupDisplaySizeDraft] = useState("")
   const [moveTargetGroup, setMoveTargetGroup] = useState(() => normalizeMarkdownEmojiGroup(initialItems[0]?.group))
   const [searchQuery, setSearchQuery] = useState("")
   const [isUploadPending, startUploadTransition] = useTransition()
@@ -164,6 +194,15 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
   const selectedCount = selectedIndexes.size
   const selectedVisibleCount = visibleIndexes.filter((index) => selectedIndexes.has(index)).length
   const previewEntries = visibleEntries.slice(0, 80)
+  const activeGroupItems = useMemo(() => {
+    if (activeGroup === ALL_GROUPS_VALUE) {
+      return []
+    }
+
+    return items.filter((item) => getEmojiGroup(item) === activeConcreteGroup)
+  }, [activeConcreteGroup, activeGroup, items])
+  const activeGroupDisplaySize = useMemo(() => getUnifiedDisplaySize(activeGroupItems), [activeGroupItems])
+  const activeGroupHasMixedDisplaySizes = useMemo(() => hasMixedDisplaySizes(activeGroupItems), [activeGroupItems])
 
   useEffect(() => {
     if (activeGroup === ALL_GROUPS_VALUE || groups.some((group) => group.name === activeGroup)) {
@@ -189,6 +228,10 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
     setMoveTargetGroup(group)
   }, [activeGroup])
 
+  useEffect(() => {
+    setGroupDisplaySizeDraft(activeGroupDisplaySize)
+  }, [activeGroup, activeGroupDisplaySize])
+
   function clearUploadInput() {
     if (uploadInputRef.current) {
       uploadInputRef.current.value = ""
@@ -196,7 +239,32 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
   }
 
   function updateItem(index: number, patch: Partial<MarkdownEmojiItem>) {
-    setItems((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row))
+    setItems((current) => current.map((row, rowIndex) => {
+      if (rowIndex !== index) {
+        return row
+      }
+
+      const next = { ...row, ...patch }
+      if ("displaySize" in patch && typeof patch.displaySize === "undefined") {
+        delete next.displaySize
+      }
+
+      return next
+    }))
+  }
+
+  function handleItemDisplaySizeChange(index: number, value: string) {
+    if (!value.trim()) {
+      updateItem(index, { displaySize: undefined })
+      return
+    }
+
+    const displaySize = normalizeMarkdownEmojiDisplaySize(value)
+    if (typeof displaySize !== "number") {
+      return
+    }
+
+    updateItem(index, { displaySize })
   }
 
   function handleUploadFiles(fileList: FileList | null) {
@@ -206,6 +274,9 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
     }
 
     const targetGroup = activeConcreteGroup
+    const targetDisplaySize = normalizeMarkdownEmojiDisplaySize(
+      getUnifiedDisplaySize(items.filter((item) => getEmojiGroup(item) === targetGroup)),
+    )
 
     startUploadTransition(async () => {
       const result = await uploadAdminMarkdownEmojiFiles(files, targetGroup)
@@ -239,6 +310,7 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
           ...item,
           shortcode,
           group: normalizeMarkdownEmojiGroup(item.group ?? targetGroup),
+          ...(typeof targetDisplaySize === "number" ? { displaySize: targetDisplaySize } : {}),
         })
       }
 
@@ -320,9 +392,43 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
     toast.success("分组表情已删除", "分组管理")
   }
 
+  function handleApplyDisplaySizeToActiveGroup() {
+    if (activeGroup === ALL_GROUPS_VALUE) {
+      toast.warning("请先选择一个具体分组", "显示大小")
+      return
+    }
+
+    const hasDraft = groupDisplaySizeDraft.trim().length > 0
+    const displaySize = normalizeMarkdownEmojiDisplaySize(groupDisplaySizeDraft)
+    if (hasDraft && typeof displaySize !== "number") {
+      toast.warning("请输入有效的显示大小", "显示大小")
+      return
+    }
+
+    setItems((current) => current.map((item) => (
+      getEmojiGroup(item) === activeConcreteGroup
+        ? withEmojiDisplaySize(item, displaySize)
+        : item
+    )))
+
+    if (typeof displaySize === "number") {
+      setGroupDisplaySizeDraft(formatMarkdownEmojiDisplaySize(displaySize))
+      toast.success(`已将「${activeConcreteGroup}」分组显示大小设为 ${displaySize}em`, "显示大小")
+      return
+    }
+
+    toast.success(`已恢复「${activeConcreteGroup}」分组默认显示大小`, "显示大小")
+  }
+
   function handleAddItem() {
     const targetGroup = activeConcreteGroup
-    setItems((current) => [...current, buildNewEmojiItem(targetGroup, current)])
+    setItems((current) => {
+      const targetDisplaySize = normalizeMarkdownEmojiDisplaySize(
+        getUnifiedDisplaySize(current.filter((item) => getEmojiGroup(item) === targetGroup)),
+      )
+
+      return [...current, withEmojiDisplaySize(buildNewEmojiItem(targetGroup, current), targetDisplaySize)]
+    })
     setActiveGroup(targetGroup)
   }
 
@@ -502,6 +608,30 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
                 删除当前分组
               </Button>
             </div>
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-background p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">前台显示大小</span>
+                {activeGroupHasMixedDisplaySizes ? <Badge variant="secondary">不一致</Badge> : null}
+              </div>
+              <Input
+                type="number"
+                min={MARKDOWN_EMOJI_DISPLAY_SIZE_MIN}
+                max={MARKDOWN_EMOJI_DISPLAY_SIZE_MAX}
+                step="0.1"
+                value={groupDisplaySizeDraft}
+                onChange={(event) => setGroupDisplaySizeDraft(event.target.value)}
+                placeholder="默认"
+                disabled={activeGroup === ALL_GROUPS_VALUE}
+                className="h-10 rounded-xl bg-background px-4 text-sm"
+              />
+              <p className="text-xs leading-5 text-muted-foreground">
+                单位 em，范围 {MARKDOWN_EMOJI_DISPLAY_SIZE_MIN}-{MARKDOWN_EMOJI_DISPLAY_SIZE_MAX}，留空恢复默认。
+              </p>
+              <Button type="button" variant="outline" disabled={activeGroup === ALL_GROUPS_VALUE || activeGroupItems.length === 0} onClick={handleApplyDisplaySizeToActiveGroup}>
+                <Ruler data-icon="inline-start" />
+                应用到当前分组
+              </Button>
+            </div>
           </aside>
 
           <div className="flex min-w-0 flex-col gap-4">
@@ -604,7 +734,7 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
                             <EmojiPreview icon={item.icon} label={item.label} className="size-6 text-xl" />
                           </div>
                         </div>
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[150px_150px_minmax(0,1fr)]">
+                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[140px_140px_120px_minmax(0,1fr)]">
                           <SettingsInputField
                             label="短码"
                             value={item.shortcode}
@@ -616,6 +746,17 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
                             value={group}
                             onChange={(value) => updateItem(index, { group: value })}
                             placeholder="如 默认 / 表情 / 颜文字"
+                          />
+                          <SettingsInputField
+                            label="大小(em)"
+                            type="number"
+                            min={MARKDOWN_EMOJI_DISPLAY_SIZE_MIN}
+                            max={MARKDOWN_EMOJI_DISPLAY_SIZE_MAX}
+                            step="0.1"
+                            value={formatMarkdownEmojiDisplaySize(item.displaySize)}
+                            onChange={(value) => handleItemDisplaySizeChange(index, value)}
+                            placeholder="默认"
+                            inputClassName="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                           />
                           <div className="flex flex-col gap-3 md:col-span-2 xl:col-span-1">
                             <SettingsInputField

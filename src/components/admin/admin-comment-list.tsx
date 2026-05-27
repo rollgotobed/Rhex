@@ -234,6 +234,13 @@ export function AdminCommentList({ data }: AdminCommentListProps) {
         tone: "sky" as const,
       },
       {
+        label: "神评",
+        value: data.summary.god,
+        icon: <Sparkles className="h-4 w-4" />,
+        hint: "评论区优先展示的高亮评论",
+        tone: "orange" as const,
+      },
+      {
         label: "回复数",
         value: data.summary.reply,
         icon: <ThumbsUp className="h-4 w-4" />,
@@ -591,6 +598,7 @@ function CommentLikeCell({ comment }: { comment: AdminCommentListItem }) {
   return (
     <div className="space-y-1 text-xs text-muted-foreground">
       <p>点赞 {formatNumber(comment.likeCount)}</p>
+      {comment.isGodComment ? <Badge variant="default">神评</Badge> : null}
     </div>
   )
 }
@@ -623,6 +631,11 @@ function CommentActionsCell({ comment }: { comment: AdminCommentListItem }) {
             前台
             <ExternalLink className="ml-auto h-3.5 w-3.5" />
           </DropdownMenuItem>
+          {!comment.parentId && comment.status === "NORMAL" ? (
+            <DropdownMenuItem onClick={() => setActiveAction(comment.isGodComment ? "unmark-god" : "mark-god")}>
+              {comment.isGodComment ? "取消神评" : "设为神评"}
+            </DropdownMenuItem>
+          ) : null}
           {comment.status === "PENDING" ? (
             <>
               <DropdownMenuItem onClick={() => setActiveAction("approve")}>
@@ -653,6 +666,20 @@ function CommentActionsCell({ comment }: { comment: AdminCommentListItem }) {
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+      {comment.status === "NORMAL" && !comment.parentId ? (
+        <AdminPostActionButton
+          action={comment.isGodComment ? "comment.unmarkGod" : "comment.markGod"}
+          targetId={comment.id}
+          label={comment.isGodComment ? "取消神评" : "设为神评"}
+          modalTitle={comment.isGodComment ? "确认取消神评" : "确认设为神评"}
+          modalDescription={`帖子：${comment.postTitle}`}
+          confirmText={comment.isGodComment ? "确认取消" : "确认设为神评"}
+          className="h-7 rounded-full px-2.5 text-xs"
+          hideTrigger
+          open={activeAction === "mark-god" || activeAction === "unmark-god"}
+          onOpenChange={(open) => setActiveAction(open ? (comment.isGodComment ? "unmark-god" : "mark-god") : null)}
+        />
+      ) : null}
       {comment.status === "PENDING" ? (
         <>
           <AdminPostActionButton

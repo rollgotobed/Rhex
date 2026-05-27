@@ -47,6 +47,7 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
     const commentLoadMode = normalizeCommentLoadMode(body.commentLoadMode, existingCommentAccessSettings.loadMode)
     const postEditableMinutes = Math.max(0, readOptionalNumberField(body, "postEditableMinutes") ?? existing.postEditableMinutes)
     const commentEditableMinutes = Math.max(0, readOptionalNumberField(body, "commentEditableMinutes") ?? existing.commentEditableMinutes)
+    const godCommentAutoLikeThreshold = Math.max(1, readOptionalNumberField(body, "godCommentAutoLikeThreshold") ?? existing.godCommentAutoLikeThreshold)
     const existingAnonymousPostSettings = resolveAnonymousPostSettings({
       appStateJson: existing.appStateJson,
       enabledFallback: false,
@@ -289,6 +290,7 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
       tippingAmounts: tippingAmounts.join(","),
       postEditableMinutes,
       commentEditableMinutes,
+      godCommentAutoLikeThreshold,
       postRedPacketEnabled,
       postRedPacketMaxPoints,
       postRedPacketDailyLimit,

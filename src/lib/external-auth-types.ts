@@ -33,6 +33,7 @@ export interface UsernameRequiredPendingAuthState extends ExternalAuthIdentity {
   usernameCandidate: string
   usernameSuggestions: string[]
   inviteCodeRequired?: boolean
+  redirectTo?: string | null
 }
 
 export interface EmailBindRequiredPendingAuthState extends ExternalAuthIdentity {
@@ -41,6 +42,7 @@ export interface EmailBindRequiredPendingAuthState extends ExternalAuthIdentity 
   conflictEmail: string
   usernameCandidate: string
   usernameSuggestions: string[]
+  redirectTo?: string | null
 }
 
 export type PendingExternalAuthState =

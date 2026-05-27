@@ -217,6 +217,7 @@ async function ensureSiteSettings() {
     loginCaptchaMode: "OFF",
     turnstileSiteKey: null,
     nicknameChangePointCost: 0,
+    godCommentAutoLikeThreshold: 10,
     tippingEnabled: false,
     tippingDailyLimit: 3,
     tippingPerPostLimit: 1,

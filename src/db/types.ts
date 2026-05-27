@@ -12,6 +12,7 @@ export {
   CommentStatus,
   ConversationKind,
   FriendLinkStatus,
+  GodCommentSource,
   LotteryStatus,
   LotteryTriggerMode,
   LotteryPrizeType,

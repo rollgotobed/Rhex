@@ -2,15 +2,7 @@ import { BadgeRuleType } from "@/lib/shared/badge-rule-enums"
 
 export type BadgeRuleValueMode = "number" | "text" | "user-level" | "vip-level" | "datetime-local"
 
-export const EXTRA_BADGE_RULE_TYPES = [
-  "ACCEPTED_ANSWER_COUNT",
-  "SENT_TIP_COUNT",
-  "RECEIVED_TIP_COUNT",
-  "FOLLOWER_COUNT",
-] as const
-
-export type ExtraBadgeRuleType = (typeof EXTRA_BADGE_RULE_TYPES)[number]
-export type BadgeRuleTypeValue = BadgeRuleType | ExtraBadgeRuleType
+export type BadgeRuleTypeValue = BadgeRuleType
 
 type BadgeRuleTypeOption = {
   value: BadgeRuleTypeValue
@@ -25,11 +17,12 @@ export const BADGE_RULE_TYPE_OPTIONS: BadgeRuleTypeOption[] = [
   { value: BadgeRuleType.POST_COUNT, label: "发帖数", placeholder: "如 10", valueMode: "number" },
   { value: BadgeRuleType.COMMENT_COUNT, label: "回复数", placeholder: "如 20", valueMode: "number" },
   { value: BadgeRuleType.RECEIVED_LIKE_COUNT, label: "获赞数", placeholder: "如 100", valueMode: "number" },
+  { value: BadgeRuleType.GOD_COMMENT_COUNT, label: "神评数", placeholder: "如 3", valueMode: "number" },
   { value: BadgeRuleType.INVITE_COUNT, label: "邀请人数", placeholder: "如 5", valueMode: "number" },
-  { value: "ACCEPTED_ANSWER_COUNT", label: "被采纳数", placeholder: "如 3", valueMode: "number" },
-  { value: "SENT_TIP_COUNT", label: "打赏次数", placeholder: "如 10", valueMode: "number" },
-  { value: "RECEIVED_TIP_COUNT", label: "被打赏次数", placeholder: "如 10", valueMode: "number" },
-  { value: "FOLLOWER_COUNT", label: "粉丝数", placeholder: "如 100", valueMode: "number" },
+  { value: BadgeRuleType.ACCEPTED_ANSWER_COUNT, label: "被采纳数", placeholder: "如 3", valueMode: "number" },
+  { value: BadgeRuleType.SENT_TIP_COUNT, label: "打赏次数", placeholder: "如 10", valueMode: "number" },
+  { value: BadgeRuleType.RECEIVED_TIP_COUNT, label: "被打赏次数", placeholder: "如 10", valueMode: "number" },
+  { value: BadgeRuleType.FOLLOWER_COUNT, label: "粉丝数", placeholder: "如 100", valueMode: "number" },
   { value: BadgeRuleType.USER_ID, label: "UID", placeholder: "如 1000", valueMode: "number" },
   { value: BadgeRuleType.LEVEL, label: "等级", placeholder: "选择等级", valueMode: "user-level" },
   { value: BadgeRuleType.CHECK_IN_DAYS, label: "签到天数", placeholder: "如 30", valueMode: "number" },

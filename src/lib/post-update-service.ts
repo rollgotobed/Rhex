@@ -9,6 +9,7 @@ import { extractSummaryFromContent } from "@/lib/content"
 import { enforceSensitiveText } from "@/lib/content-safety"
 import { createPostMentionNotifications, stripPostContentUserLinks } from "@/lib/post-mentions"
 import { normalizePostAttachmentInputs, syncPostAttachments } from "@/lib/post-attachments"
+import { processInternalPostCardEmbeds } from "@/lib/post-card-embed.server"
 import { buildPostContentDocument, getAllPostContentText, getPostContentMeta, serializePostContentDocument } from "@/lib/post-content"
 import { normalizeManualTags, syncPostTaxonomy } from "@/lib/post-editor"
 import { getSiteSettings } from "@/lib/site-settings"
@@ -148,15 +149,26 @@ export async function updatePostFlow(input: {
     const replyUnlockSafety = replyUnlockContent ? await enforceSensitiveText({ scene: "post.content", text: replyUnlockContent }) : null
     const purchaseUnlockSafety = purchaseUnlockContent ? await enforceSensitiveText({ scene: "post.content", text: purchaseUnlockContent }) : null
     const tagsSafety = sanitizedManualTags.length > 0 ? await enforceSensitiveText({ scene: "post.tags", text: sanitizedManualTags.join("\n") }) : null
+    const [
+      publicContentWithCards,
+      loginUnlockContentWithCards,
+      replyUnlockContentWithCards,
+      purchaseUnlockContentWithCards,
+    ] = await Promise.all([
+      processInternalPostCardEmbeds(contentSafety.sanitizedText, { requestUrl: input.request.url, requestHeaders: input.request.headers, currentPostId: input.postId }),
+      loginUnlockSafety ? processInternalPostCardEmbeds(loginUnlockSafety.sanitizedText, { requestUrl: input.request.url, requestHeaders: input.request.headers, currentPostId: input.postId }) : "",
+      replyUnlockSafety ? processInternalPostCardEmbeds(replyUnlockSafety.sanitizedText, { requestUrl: input.request.url, requestHeaders: input.request.headers, currentPostId: input.postId }) : "",
+      purchaseUnlockSafety ? processInternalPostCardEmbeds(purchaseUnlockSafety.sanitizedText, { requestUrl: input.request.url, requestHeaders: input.request.headers, currentPostId: input.postId }) : "",
+    ])
 
     const normalizedReplyThreshold = replyUnlockContent ? (replyThreshold ?? 1) : undefined
     const normalizedPurchasePrice = purchaseUnlockContent ? (purchasePrice ?? 1) : undefined
     const serializedContent = serializePostContentDocument(buildPostContentDocument({
-      publicContent: contentSafety.sanitizedText,
-      loginUnlockContent: loginUnlockSafety?.sanitizedText ?? "",
-      replyUnlockContent: replyUnlockSafety?.sanitizedText ?? "",
+      publicContent: publicContentWithCards,
+      loginUnlockContent: loginUnlockContentWithCards,
+      replyUnlockContent: replyUnlockContentWithCards,
       replyThreshold: normalizedReplyThreshold,
-      purchaseUnlockContent: purchaseUnlockSafety?.sanitizedText ?? "",
+      purchaseUnlockContent: purchaseUnlockContentWithCards,
       purchasePrice: normalizedPurchasePrice,
       meta: existingContentMeta,
     }))
@@ -180,12 +192,12 @@ export async function updatePostFlow(input: {
       editorId: String(input.currentUser.id),
       changes: {
         title: titleSafety.sanitizedText,
-        content: contentSafety.sanitizedText,
+        content: publicContentWithCards,
         coverPath,
-        loginUnlockContent,
-        replyUnlockContent,
+        loginUnlockContent: loginUnlockContentWithCards,
+        replyUnlockContent: replyUnlockContentWithCards,
         replyThreshold: normalizedReplyThreshold,
-        purchaseUnlockContent,
+        purchaseUnlockContent: purchaseUnlockContentWithCards,
         purchasePrice: normalizedPurchasePrice,
         commentsVisibleToAuthorOnly,
         minViewLevel,
@@ -289,13 +301,18 @@ export async function updatePostFlow(input: {
   })
   const { value: hookedAppendedContent, changed: appendHookAdjusted } = resolveHookedStringValue(appendedContent, appendedContentHookResult.value)
   const appendSafety = await enforceSensitiveText({ scene: "post.content", text: hookedAppendedContent })
+  const appendedContentWithCards = await processInternalPostCardEmbeds(appendSafety.sanitizedText, {
+    requestUrl: input.request.url,
+    requestHeaders: input.request.headers,
+    currentPostId: input.postId,
+  })
   const nextSortOrder = (post.appendices[0]?.sortOrder ?? -1) + 1
   let mentionUserIds = [] as number[]
 
   await executeAddonActionHook("post.update.before", {
     postId: input.postId,
     editorId: String(input.currentUser.id),
-    changes: { appendedContent: appendSafety.sanitizedText, mode: "append" },
+    changes: { appendedContent: appendedContentWithCards, mode: "append" },
   }, {
     ...hookContext,
     throwOnError: true,
@@ -303,14 +320,14 @@ export async function updatePostFlow(input: {
 
   await runPostUpdateTransaction(async (tx) => {
     const activityAt = new Date()
-    let nextAppendedContent = appendSafety.sanitizedText
+    let nextAppendedContent = appendedContentWithCards
 
     const mentionResult = await createPostMentionNotifications({
       tx,
       postId: input.postId,
       senderId: input.currentUser.id,
       senderName: input.currentUser.id === post.authorId ? "楼主" : "管理员",
-      rawPostContent: appendSafety.sanitizedText,
+      rawPostContent: appendedContentWithCards,
       excludeUserIds: [post.authorId],
     })
     nextAppendedContent = mentionResult.content
@@ -341,7 +358,7 @@ export async function updatePostFlow(input: {
   await executeAddonActionHook("post.update.after", {
     postId: input.postId,
     editorId: String(input.currentUser.id),
-    changes: { appendedContent: appendSafety.sanitizedText, mode: "append" },
+    changes: { appendedContent: appendedContentWithCards, mode: "append" },
     ...(updatedPost ? { post: updatedPost } : {}),
   }, hookContext)
 

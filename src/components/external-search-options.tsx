@@ -3,7 +3,7 @@
 import { ArrowUpRight, Search } from "lucide-react"
 import { useSyncExternalStore } from "react"
 
-import { buildExternalSearchUrl, type ExternalSearchEngine } from "@/lib/site-search-settings"
+import { buildExternalSearchUrl, normalizeExternalSearchSiteHost, type ExternalSearchEngine } from "@/lib/site-search-settings"
 
 interface ExternalSearchOptionsProps {
   keyword: string
@@ -23,10 +23,10 @@ export function ExternalSearchOptions({
   const trimmedKeyword = keyword.trim()
   const browserSiteHost = useSyncExternalStore(
     () => () => undefined,
-    () => window.location.host || null,
+    () => normalizeExternalSearchSiteHost(window.location.host),
     () => null,
   )
-  const resolvedSiteHost = siteHost !== undefined ? siteHost : browserSiteHost
+  const resolvedSiteHost = siteHost !== undefined ? normalizeExternalSearchSiteHost(siteHost) : browserSiteHost
 
   if (!trimmedKeyword) {
     return null

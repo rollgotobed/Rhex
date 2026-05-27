@@ -4,6 +4,7 @@ import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 
 import { LevelIcon } from "@/components/level-icon"
+import { useSiteSettingsContext } from "@/components/site-settings-provider"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { LeftSidebarDisplayMode } from "@/lib/site-settings"
 import { getSidebarNavigationDisplayModeAttribute } from "@/lib/sidebar-navigation-preference"
@@ -53,6 +54,8 @@ export function SidebarNavigation({
   onToggle,
   stickyTopClass = "top-14",
 }: SidebarNavigationProps) {
+  const { leftSidebarHome } = useSiteSettingsContext()
+
   if (displayMode === "HIDDEN") {
     return null
   }
@@ -62,6 +65,8 @@ export function SidebarNavigation({
   const activeItemClass = "bg-[linear-gradient(135deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-size-[8px_8px] font-medium text-foreground"
   const inactiveItemClass = "text-muted-foreground hover:bg-accent hover:text-foreground"
   const visibleZones = zones.filter((zone) => !zone.hiddenFromSidebar)
+  const homeLabel = leftSidebarHome.name || "首页"
+  const homeIcon = leftSidebarHome.icon || "🏠"
 
   return (
     <div
@@ -95,22 +100,27 @@ export function SidebarNavigation({
             <div className="mb-6">
               <nav className="space-y-1">
                 <div className="forum-page-sidebar-home-row flex items-center gap-2">
-                  <Link
-                    href="/"
-                    className={cn(
-                      baseItemClass,
-                      "forum-page-home-link flex-1",
-                      !activeZoneSlug && !activeBoardSlug ? activeItemClass : inactiveItemClass,
-                    )}
-                    title="首页"
-                  >
-                    <span className="text-lg">🏠</span>
-                    <span>首页</span>
-                  </Link>
+                  {leftSidebarHome.enabled ? (
+                    <Link
+                      href="/"
+                      className={cn(
+                        baseItemClass,
+                        "forum-page-home-link flex-1",
+                        !activeZoneSlug && !activeBoardSlug ? activeItemClass : inactiveItemClass,
+                      )}
+                      title={homeLabel}
+                    >
+                      <LevelIcon icon={homeIcon} className="h-4 w-4 text-lg" svgClassName="[&>svg]:block" />
+                      <span>{homeLabel}</span>
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     onClick={onToggle}
-                    className="forum-page-sidebar-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    className={cn(
+                      "forum-page-sidebar-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                      !leftSidebarHome.enabled && "ml-auto",
+                    )}
                     aria-label={collapsed ? "展开左侧导航" : "收起左侧导航"}
                     title={collapsed ? "展开左侧导航" : "收起左侧导航"}
                   >

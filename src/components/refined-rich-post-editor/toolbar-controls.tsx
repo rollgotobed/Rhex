@@ -84,6 +84,7 @@ export function ToolButton({
   disabled = false,
   active = false,
   onMouseDown,
+  onPointerDown,
 }: {
   tip: ToolbarTipDefinition
   platform: ClientPlatform
@@ -92,18 +93,20 @@ export function ToolButton({
   disabled?: boolean
   active?: boolean
   onMouseDown?: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onPointerDown?: (event: React.PointerEvent<HTMLButtonElement>) => void
 }) {
   return (
     <Tooltip content={<ToolbarTip {...tip} platform={platform} />}>
       <button
         type="button"
         aria-label={tip.label}
+        onPointerDown={onPointerDown}
         onMouseDown={onMouseDown}
         onClick={onClick}
         disabled={disabled}
         className={active
-          ? "shrink-0 rounded-lg bg-accent p-2 text-accent-foreground shadow-xs transition-colors [&>svg]:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
-          : "shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground hover:[&>svg]:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"}
+          ? "shrink-0 touch-manipulation rounded-lg bg-accent p-2 text-accent-foreground shadow-xs transition-colors [&>svg]:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+          : "shrink-0 touch-manipulation rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground hover:[&>svg]:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"}
       >
         {children}
       </button>
@@ -117,7 +120,7 @@ function ToolbarSelectTrigger({ tip, platform, children }: { tip: ToolbarTipDefi
       <SelectTrigger
         aria-label={tip.label}
         title={getToolbarTitle(tip, platform)}
-        className="h-auto w-auto shrink-0 justify-center gap-0.5 rounded-lg border-0 bg-transparent p-2 text-muted-foreground shadow-none ring-0 ring-offset-0 transition-colors hover:bg-accent hover:text-accent-foreground hover:[&>svg]:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 focus:ring-0 focus:ring-offset-0 focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none [&>span]:flex [&>span]:w-auto [&>span]:items-center [&>span]:justify-center [&>span]:text-center [&>svg]:size-4 [&>svg]:opacity-55"
+        className="h-auto w-auto shrink-0 touch-manipulation justify-center gap-0.5 rounded-lg border-0 bg-transparent p-2 text-muted-foreground shadow-none ring-0 ring-offset-0 transition-colors hover:bg-accent hover:text-accent-foreground hover:[&>svg]:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 focus:ring-0 focus:ring-offset-0 focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none [&>span]:flex [&>span]:w-auto [&>span]:items-center [&>span]:justify-center [&>span]:text-center [&>svg]:size-4 [&>svg]:opacity-55"
       >
         {children}
       </SelectTrigger>

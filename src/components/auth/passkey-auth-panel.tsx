@@ -1,22 +1,22 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from "@simplewebauthn/browser"
 
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 
 interface PasskeyAuthPanelProps {
   mode: "login" | "register"
+  redirectTarget?: string
 }
 
 function isValidUsername(value: string) {
   return /^[a-zA-Z0-9_]{3,20}$/.test(value)
 }
 
-export function PasskeyAuthPanel({ mode }: PasskeyAuthPanelProps) {
-  const router = useRouter()
+export function PasskeyAuthPanel({ mode, redirectTarget = "/" }: PasskeyAuthPanelProps) {
   const [supported, setSupported] = useState(true)
   const [loading, setLoading] = useState(false)
   const [username, setUsername] = useState("")
@@ -56,9 +56,7 @@ export function PasskeyAuthPanel({ mode }: PasskeyAuthPanelProps) {
         throw new Error(verifyResult.message ?? "Passkey 登录失败")
       }
 
-      toast.success("Passkey 登录成功，正在跳转…", "登录成功")
-      router.replace(verifyResult.data?.redirectTo ?? "/")
-      router.refresh()
+      window.location.replace(normalizeAuthRedirectTarget(redirectTarget || verifyResult.data?.redirectTo))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Passkey 登录失败", "登录失败")
     } finally {
@@ -108,9 +106,7 @@ export function PasskeyAuthPanel({ mode }: PasskeyAuthPanelProps) {
         throw new Error(verifyResult.message ?? "Passkey 注册失败")
       }
 
-      toast.success("Passkey 验证完成，正在跳转…", "认证成功")
-      router.replace(verifyResult.data?.redirectTo ?? "/")
-      router.refresh()
+      window.location.replace(normalizeAuthRedirectTarget(verifyResult.data?.redirectTo))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Passkey 注册失败", "认证失败")
     } finally {

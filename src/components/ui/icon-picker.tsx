@@ -48,8 +48,9 @@ interface IconPickerProps {
   popoverTitle?: string
   uploadFolder?: "avatars" | "posts" | "comments" | "friend-links" | "site-logo" | "icon"
   hideLabel?: boolean
-  triggerMode?: "full" | "icon"
+  triggerMode?: "full" | "icon" | "input"
   allowEmpty?: boolean
+  displayText?: string
 }
 
 export function IconPicker({
@@ -68,6 +69,7 @@ export function IconPicker({
   hideLabel = false,
   triggerMode = "full",
   allowEmpty = false,
+  displayText,
 }: IconPickerProps) {
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -123,7 +125,9 @@ export function IconPicker({
           className={cn(
             triggerMode === "icon"
               ? "flex h-9 w-9 items-center justify-center rounded-2xl border border-border bg-background text-left text-sm transition-colors hover:bg-accent"
-              : "flex h-11 w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-full border border-border bg-background px-4 text-left text-sm transition-colors hover:bg-accent",
+              : triggerMode === "input"
+                ? "flex h-11 w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-xl border border-input bg-background px-4 text-left text-sm transition-colors hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                : "flex h-11 w-full min-w-0 max-w-full items-center gap-3 overflow-hidden rounded-full border border-border bg-background px-4 text-left text-sm transition-colors hover:bg-accent",
             triggerClassName,
           )}
         >
@@ -131,7 +135,9 @@ export function IconPicker({
             className={
               triggerMode === "icon"
                 ? "inline-flex h-4 w-4 shrink-0 items-center justify-center text-foreground/80"
-                : "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground/80"
+                : triggerMode === "input"
+                  ? "inline-flex h-5 w-5 shrink-0 items-center justify-center text-foreground/80"
+                  : "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground/80"
             }
           >
             {allowEmpty && !normalizedValue ? (
@@ -148,7 +154,7 @@ export function IconPicker({
           </span>
           {triggerMode === "icon" ? null : (
             <span className="min-w-0 flex-1 truncate">
-              {normalizedValue || placeholder}
+              {displayText || normalizedValue || placeholder}
             </span>
           )}
         </PopoverTrigger>

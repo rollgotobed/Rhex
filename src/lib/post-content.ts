@@ -1,4 +1,5 @@
 import type { StoredPostRewardPoolConfig } from "@/lib/post-reward-pool-config"
+import { replacePostCardEmbedTokensForSummary } from "@/lib/post-card-embed"
 
 export type PostBlockAccessType = "PUBLIC" | "AUTHOR_ONLY" | "LOGIN_UNLOCK" | "REPLY_UNLOCK" | "PURCHASE_UNLOCK"
 
@@ -180,15 +181,17 @@ export function getPublicPostContentText(rawContent: string) {
 
 // AI prompts must only receive content visible without unlock checks.
 export function getAiSafePostContentText(rawContent: string) {
-  return getPublicPostContentText(rawContent)
+  return replacePostCardEmbedTokensForSummary(getPublicPostContentText(rawContent)).trim()
 }
 
 export function getAllPostContentText(rawContent: string) {
-  return parsePostContentDocument(rawContent)
+  const text = parsePostContentDocument(rawContent)
     .blocks
     .map((block) => block.text)
     .join("\n\n")
     .trim()
+
+  return replacePostCardEmbedTokensForSummary(text).trim()
 }
 
 export function getPostContentMeta(rawContent: string) {

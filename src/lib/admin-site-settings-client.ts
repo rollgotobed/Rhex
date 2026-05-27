@@ -15,7 +15,8 @@ function isMarkdownEmojiItem(value: unknown): value is MarkdownEmojiItem {
     typeof row.shortcode === "string" &&
     typeof row.label === "string" &&
     typeof row.icon === "string" &&
-    (typeof row.group === "undefined" || typeof row.group === "string")
+    (typeof row.group === "undefined" || typeof row.group === "string") &&
+    (typeof row.displaySize === "undefined" || typeof row.displaySize === "number")
   )
 }
 

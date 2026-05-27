@@ -58,5 +58,3 @@ export function buildPostSlug(title: string, mode: PostSlugGenerationMode, optio
       return `${buildTitleSlugBase(title)}-${now}`
   }
 }
-
-

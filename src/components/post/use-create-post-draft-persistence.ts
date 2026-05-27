@@ -4,6 +4,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react"
 
 import {
   clearPostDraftFromStorage,
+  deleteCurrentPostDraftFromStorage,
   deletePostDraftSnapshotFromStorage,
   hasMeaningfulPostDraftContent,
   loadPostDraftFromStorage,
@@ -65,6 +66,10 @@ function getStoredDraftStateSnapshot({
   }
 }
 
+function buildAutosaveSuppressionKey(draft: LocalPostDraft) {
+  return JSON.stringify(draft)
+}
+
 export function useCreatePostDraftPersistence({
   draft,
   initialDraftData,
@@ -82,6 +87,8 @@ export function useCreatePostDraftPersistence({
   const [lastSavedDraftAt, setLastSavedDraftAt] = useState<string | null>(null)
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null)
   const hasHydratedDraftsRef = useRef(false)
+  const submitSucceededRef = useRef(false)
+  const suppressedAutosaveKeyRef = useRef<string | null>(null)
 
   function syncStoredDraftState({
     showPending = false,
@@ -131,9 +138,19 @@ export function useCreatePostDraftPersistence({
   }, [postId, storageMode])
 
   useEffect(() => {
-    if (typeof window === "undefined" || !hasHydratedDraftsRef.current) {
+    if (
+      typeof window === "undefined"
+      || !hasHydratedDraftsRef.current
+      || submitSucceededRef.current
+    ) {
       return
     }
+
+    const autosaveKey = buildAutosaveSuppressionKey(draft)
+    if (suppressedAutosaveKeyRef.current === autosaveKey) {
+      return
+    }
+    suppressedAutosaveKeyRef.current = null
 
     const timer = window.setTimeout(() => {
       const result = savePostDraftToStorage(
@@ -188,6 +205,7 @@ export function useCreatePostDraftPersistence({
         && (restoredRewardPoolOptions.postRedPacketEnabled
           || restoredRewardPoolOptions.postJackpotEnabled),
     })
+    suppressedAutosaveKeyRef.current = null
     setDraftRestored(true)
     setActiveDraftId(draftId)
     setPendingDraftToRestore(null)
@@ -201,6 +219,11 @@ export function useCreatePostDraftPersistence({
   }
 
   function handleManualDraftSave() {
+    if (submitSucceededRef.current) {
+      return
+    }
+    suppressedAutosaveKeyRef.current = null
+
     const result = savePostDraftToStorage(
       storageMode,
       draft,
@@ -263,6 +286,7 @@ export function useCreatePostDraftPersistence({
 
   function handleClearDraft() {
     const targetDraftId = activeDraftId ?? pendingDraftToRestore?.id
+    suppressedAutosaveKeyRef.current = buildAutosaveSuppressionKey(draft)
 
     if (!targetDraftId) {
       clearPostDraftFromStorage(storageMode, postId)
@@ -286,6 +310,18 @@ export function useCreatePostDraftPersistence({
     toast.info("当前草稿已从草稿箱删除", "草稿已删除")
   }
 
+  function handleClearDraftBox() {
+    suppressedAutosaveKeyRef.current = buildAutosaveSuppressionKey(draft)
+    clearPostDraftFromStorage(storageMode, postId)
+    setDraftRestored(false)
+    setActiveDraftId(null)
+    syncStoredDraftState({
+      showPending: true,
+      activeDraftId: null,
+    })
+    toast.info("当前页面的草稿箱已清空", "草稿箱已清空")
+  }
+
   function handleRestoreDraftFromBox(draftId: string) {
     const targetDraft = draftBoxEntries.find((item) => item.id === draftId)
     if (targetDraft) {
@@ -296,6 +332,9 @@ export function useCreatePostDraftPersistence({
   function handleDeleteDraftFromBox(draftId: string) {
     deletePostDraftSnapshotFromStorage(storageMode, draftId, postId)
     const nextActiveDraftId = activeDraftId === draftId ? null : activeDraftId
+    if (activeDraftId === draftId) {
+      suppressedAutosaveKeyRef.current = buildAutosaveSuppressionKey(draft)
+    }
     setDraftRestored(false)
     setActiveDraftId(nextActiveDraftId)
     syncStoredDraftState({
@@ -305,10 +344,14 @@ export function useCreatePostDraftPersistence({
     toast.info("所选草稿已从草稿箱删除", "草稿已删除")
   }
 
-  function handleSubmitSuccess() {
-    if (activeDraftId) {
-      deletePostDraftSnapshotFromStorage(storageMode, activeDraftId, postId)
-    }
+  function handleSubmitSuccess(submittedDraft?: LocalPostDraft) {
+    submitSucceededRef.current = true
+    suppressedAutosaveKeyRef.current = buildAutosaveSuppressionKey(draft)
+    deleteCurrentPostDraftFromStorage(storageMode, {
+      postId,
+      draftId: activeDraftId,
+      drafts: [submittedDraft, draft],
+    })
     setDraftRestored(false)
     setActiveDraftId(null)
     syncStoredDraftState({
@@ -324,6 +367,7 @@ export function useCreatePostDraftPersistence({
     handleRestorePendingDraft,
     handleManualDraftSave,
     handleClearDraft,
+    handleClearDraftBox,
     handleRestoreDraftFromBox,
     handleDeleteDraftFromBox,
     handleSubmitSuccess,

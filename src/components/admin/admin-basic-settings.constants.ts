@@ -27,11 +27,12 @@ export const HEAT_COLOR_PRESETS = [
 ]
 
 export const PROFILE_POST_LINK_DISPLAY_MODE_OPTIONS = [
-  { value: "SLUG", label: "slug 模式（/posts/标题-id）" },
+  { value: "SLUG", label: "slug 模式（/posts/slug）" },
   { value: "ID", label: "id 模式（/posts/id）" },
 ] as const
 
 export const PROFILE_POST_SLUG_GENERATION_MODE_OPTIONS = [
+  { value: "SEQUENTIAL_ID", label: "递增数字（/posts/1）" },
   { value: "TITLE_TIMESTAMP", label: "标题 + 毫秒时间戳" },
   { value: "TIME36", label: "Date.now().toString(36)" },
   { value: "PINYIN_TIME36", label: "拼音 + 秒级 36 进制" },

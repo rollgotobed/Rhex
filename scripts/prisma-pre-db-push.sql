@@ -10,10 +10,11 @@ BEGIN
   EXECUTE 'DELETE FROM "Comment" WHERE "status"::text = ''DELETED''';
 
   IF to_regclass('public."User"') IS NOT NULL THEN
-    EXECUTE 'UPDATE "User" SET "postCount" = 0, "commentCount" = 0, "acceptedAnswerCount" = 0';
+    EXECUTE 'UPDATE "User" SET "postCount" = 0, "commentCount" = 0, "acceptedAnswerCount" = 0, "godCommentCount" = 0';
     EXECUTE 'UPDATE "User" AS "user" SET "postCount" = "post_counts"."count" FROM (SELECT "authorId" AS "userId", COUNT(*)::integer AS "count" FROM "Post" GROUP BY "authorId") AS "post_counts" WHERE "user"."id" = "post_counts"."userId"';
     EXECUTE 'UPDATE "User" AS "user" SET "commentCount" = "comment_counts"."count" FROM (SELECT "userId", COUNT(*)::integer AS "count" FROM "Comment" GROUP BY "userId") AS "comment_counts" WHERE "user"."id" = "comment_counts"."userId"';
     EXECUTE 'UPDATE "User" AS "user" SET "acceptedAnswerCount" = "accepted_counts"."count" FROM (SELECT "userId", COUNT(*)::integer AS "count" FROM "Comment" WHERE "isAcceptedAnswer" = true GROUP BY "userId") AS "accepted_counts" WHERE "user"."id" = "accepted_counts"."userId"';
+    EXECUTE 'UPDATE "User" AS "user" SET "godCommentCount" = "god_counts"."count" FROM (SELECT "userId", COUNT(*)::integer AS "count" FROM "Comment" WHERE "isGodComment" = true GROUP BY "userId") AS "god_counts" WHERE "user"."id" = "god_counts"."userId"';
   END IF;
 
   IF to_regclass('public."Board"') IS NOT NULL THEN

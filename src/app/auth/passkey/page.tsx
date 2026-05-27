@@ -7,6 +7,7 @@ import { PasskeyAuthPanel } from "@/components/auth/passkey-auth-panel"
 import { SiteHeader } from "@/components/site-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCurrentUser } from "@/lib/auth"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 import { readSearchParam } from "@/lib/search-params"
 import { getSiteSettings } from "@/lib/site-settings"
 
@@ -26,13 +27,14 @@ export default async function PasskeyPage(props: PasskeyPageProps) {
   const searchParams = await props.searchParams
   const [currentUser, settings] = await Promise.all([getCurrentUser(), getSiteSettings()])
   const mode = readSearchParam(searchParams?.mode) === "register" ? "register" : "login"
+  const redirectTarget = normalizeAuthRedirectTarget(readSearchParam(searchParams?.redirectTo))
 
   if (!settings.authPasskeyEnabled) {
     redirect("/login?authError=Passkey 登录暂未开放")
   }
 
   if (currentUser) {
-    redirect("/")
+    redirect(redirectTarget)
   }
 
   if (mode === "register" && !settings.registrationEnabled) {
@@ -80,7 +82,7 @@ export default async function PasskeyPage(props: PasskeyPageProps) {
                   <CardTitle>{mode === "register" ? "使用 Passkey 注册" : "使用 Passkey 登录"}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <PasskeyAuthPanel mode={mode} />
+                  <PasskeyAuthPanel mode={mode} redirectTarget={redirectTarget} />
                   <p className="mt-4 text-center text-sm text-muted-foreground">
                     {mode === "register"
                       ? <Link href="/login" className="font-medium text-foreground hover:underline">已有账户，返回登录</Link>

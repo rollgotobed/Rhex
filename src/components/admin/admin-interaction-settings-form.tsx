@@ -144,6 +144,7 @@ export function AdminInteractionSettingsForm({
             <AdminBooleanSelectField label="游客可查看评论" checked={draft.guestCanViewComments} onChange={(value) => updateDraftField("guestCanViewComments", value)} />
             <TextField label="楼中楼默认展开条数" value={draft.commentInitialVisibleReplies} onChange={(value) => updateDraftField("commentInitialVisibleReplies", value)} placeholder="如 10" />
             <TextField label="评论区一页显示数" value={draft.commentPageSize} onChange={(value) => updateDraftField("commentPageSize", value)} placeholder="如 15" />
+            <TextField label="评论点赞自动神评阈值" value={draft.godCommentAutoLikeThreshold} onChange={(value) => updateDraftField("godCommentAutoLikeThreshold", value)} placeholder="如 10" />
             <SelectField
               label="评论加载方式"
               value={draft.commentLoadMode}

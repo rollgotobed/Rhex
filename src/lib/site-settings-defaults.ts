@@ -1,6 +1,7 @@
 import { DEFAULT_FOOTER_LINKS } from "@/lib/shared/config-parsers"
 import { DEFAULT_SITE_HEADER_APP_LINKS } from "@/lib/site-header-app-links"
 import { DEFAULT_MESSAGE_PROMPT_AUDIO_PATH } from "@/lib/message-prompt-audio"
+import { DEFAULT_GOD_COMMENT_AUTO_LIKE_THRESHOLD } from "@/lib/god-comment-settings"
 
 const defaultFooterCopyrightText = `Rhex 论坛系统 ${new Date().getFullYear()}`
 
@@ -45,6 +46,7 @@ export const defaultSiteSettingsCreateInput = {
   nicknameChangePointCost: 0,
   postEditableMinutes: 10,
   commentEditableMinutes: 5,
+  godCommentAutoLikeThreshold: DEFAULT_GOD_COMMENT_AUTO_LIKE_THRESHOLD,
   tippingEnabled: false,
   tippingDailyLimit: 3,
   tippingPerPostLimit: 1,
@@ -199,6 +201,11 @@ export const defaultSiteSettingsCreateInput = {
       },
       leftSidebarDisplay: {
         mode: "DEFAULT",
+      },
+      leftSidebarHome: {
+        enabled: true,
+        name: "首页",
+        icon: "🏠",
       },
       attachments: {
         uploadEnabled: false,

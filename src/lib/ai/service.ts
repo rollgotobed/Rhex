@@ -9,7 +9,7 @@ import type {
   AiProvider,
 } from "./provider/types"
 
-export type AiTaskKind = "reply" | "summary" | "auto-categorize"
+export type AiTaskKind = "reply" | "summary" | "auto-categorize" | "chat"
 
 export interface RunAiTaskInput {
   kind: AiTaskKind

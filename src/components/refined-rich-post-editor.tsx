@@ -214,7 +214,6 @@ export function RefinedRichPostEditor({
     disabled,
     markdownImageUploadEnabled,
     uploading,
-    uploadResultsCount: uploadResults.length,
     fileInputRef,
     selectionRef,
     getEditorState: selectionState.getEditorState,
@@ -348,7 +347,7 @@ export function RefinedRichPostEditor({
       syncMentionPanelPosition()
     }
 
-    function handlePointerDown(event: MouseEvent) {
+    function handlePointerDown(event: PointerEvent) {
       const target = event.target
       if (!(target instanceof Element)) {
         return
@@ -363,12 +362,12 @@ export function RefinedRichPostEditor({
 
     window.addEventListener("resize", handleViewportChange)
     window.addEventListener("scroll", handleViewportChange, true)
-    document.addEventListener("mousedown", handlePointerDown)
+    document.addEventListener("pointerdown", handlePointerDown)
 
     return () => {
       window.removeEventListener("resize", handleViewportChange)
       window.removeEventListener("scroll", handleViewportChange, true)
-      document.removeEventListener("mousedown", handlePointerDown)
+      document.removeEventListener("pointerdown", handlePointerDown)
     }
   }, [activeMention, closeMentionPanel, syncMentionPanelPosition, textareaRef])
 
@@ -491,6 +490,7 @@ export function RefinedRichPostEditor({
               linkButtonRef={panels.linkPanel.buttonRef}
               imageButtonRef={panels.imagePanel.buttonRef}
               spoilerButtonRef={panels.spoilerPanel.buttonRef}
+              onToolbarPointerDown={commands.handleToolbarPointerDown}
               onToolbarMouseDown={commands.handleToolbarMouseDown}
               onToolbarSelectMouseDown={commands.handleToolbarSelectMouseDown}
               onToolbarSelectOpenChange={commands.handleToolbarSelectOpenChange}
@@ -569,6 +569,7 @@ export function RefinedRichPostEditor({
         textareaRef={textareaRef}
         selectionStore={selectionStore}
         platform={shortcutPlatform}
+        onPointerDown={commands.handleToolbarPointerDown}
         onMouseDown={commands.handleToolbarMouseDown}
         onBold={commands.toolbarActions.bold}
         onUnderline={commands.toolbarActions.underline}
@@ -630,6 +631,7 @@ export function RefinedRichPostEditor({
         onClose={panels.spoilerPanel.close}
         onInsertSpoiler={commands.toolbarActions.insertSpoiler}
         onInsertScratchMask={commands.toolbarActions.insertScratchMask}
+        onItemPointerDown={commands.handleToolbarPointerDown}
         onItemMouseDown={commands.handleToolbarMouseDown}
       />
       <EmojiInsertPanel

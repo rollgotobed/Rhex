@@ -138,6 +138,17 @@ export async function deletePostPermanently(postId: string) {
       },
     })
 
+    const godCommentGroups = await tx.comment.groupBy({
+      by: ["userId"],
+      where: {
+        postId,
+        isGodComment: true,
+      },
+      _count: {
+        _all: true,
+      },
+    })
+
     const favoriteCollectionItems = await tx.favoriteCollectionItem.findMany({
       where: { postId },
       select: {
@@ -194,6 +205,14 @@ export async function deletePostPermanently(postId: string) {
           },
         },
       })
+    }
+
+    for (const group of godCommentGroups) {
+      await tx.$executeRaw`
+        UPDATE "User"
+        SET "godCommentCount" = GREATEST(0, "godCommentCount" - ${group._count._all})
+        WHERE "id" = ${group.userId}
+      `
     }
 
     await syncTagPostCounts(tx, postTags.map((item) => item.tagId))

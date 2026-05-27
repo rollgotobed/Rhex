@@ -37,6 +37,7 @@ type CommentTreeRow = {
   id: string
   userId: number
   isAcceptedAnswer: boolean
+  isGodComment: boolean
 }
 
 function buildAcceptedAnswerGroups(rows: CommentTreeRow[]) {
@@ -44,6 +45,20 @@ function buildAcceptedAnswerGroups(rows: CommentTreeRow[]) {
 
   for (const row of rows) {
     if (!row.isAcceptedAnswer) {
+      continue
+    }
+
+    counts.set(row.userId, (counts.get(row.userId) ?? 0) + 1)
+  }
+
+  return [...counts.entries()].map(([userId, count]) => ({ userId, count }))
+}
+
+function buildGodCommentGroups(rows: CommentTreeRow[]) {
+  const counts = new Map<number, number>()
+
+  for (const row of rows) {
+    if (!row.isGodComment) {
       continue
     }
 
@@ -66,15 +81,15 @@ function buildCommentAuthorGroups(rows: CommentTreeRow[]) {
 async function findCommentTreeRows(tx: Prisma.TransactionClient, commentId: string) {
   return tx.$queryRaw<CommentTreeRow[]>(Prisma.sql`
     WITH RECURSIVE "comment_tree" AS (
-      SELECT id, "userId", "isAcceptedAnswer"
+      SELECT id, "userId", "isAcceptedAnswer", "isGodComment"
       FROM "Comment"
       WHERE id = ${commentId}
       UNION ALL
-      SELECT child.id, child."userId", child."isAcceptedAnswer"
+      SELECT child.id, child."userId", child."isAcceptedAnswer", child."isGodComment"
       FROM "Comment" AS child
       INNER JOIN "comment_tree" AS parent ON child."parentId" = parent.id
     )
-    SELECT id, "userId", "isAcceptedAnswer"
+    SELECT id, "userId", "isAcceptedAnswer", "isGodComment"
     FROM "comment_tree"
   `)
 }
@@ -98,6 +113,7 @@ export async function deleteCommentPermanently(commentId: string) {
     const acceptedAnswerIds = new Set(commentTree.filter((row) => row.isAcceptedAnswer).map((row) => row.id))
     const authorGroups = buildCommentAuthorGroups(commentTree)
     const acceptedAnswerGroups = buildAcceptedAnswerGroups(commentTree)
+    const godCommentGroups = buildGodCommentGroups(commentTree)
 
     if (acceptedAnswerIds.size > 0) {
       const post = await tx.post.findUnique({
@@ -150,6 +166,14 @@ export async function deleteCommentPermanently(commentId: string) {
           },
         },
       })
+    }
+
+    for (const group of godCommentGroups) {
+      await tx.$executeRaw`
+        UPDATE "User"
+        SET "godCommentCount" = GREATEST(0, "godCommentCount" - ${group.count})
+        WHERE "id" = ${group.userId}
+      `
     }
 
     return {

@@ -116,6 +116,7 @@ export function findManagedCommentContext(commentId: string) {
       content: true,
       status: true,
       reviewNote: true,
+      isGodComment: true,
       post: {
         select: {
           id: true,

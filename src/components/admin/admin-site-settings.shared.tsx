@@ -10,9 +10,10 @@ import { COMMENT_LOAD_MODE_INFINITE, COMMENT_LOAD_MODE_PAGINATION, type CommentL
 import { POST_LIST_LOAD_MODE_INFINITE, POST_LIST_LOAD_MODE_PAGINATION, type PostListLoadMode } from "@/lib/post-list-load-mode"
 import { normalizePostListDisplayMode, POST_LIST_DISPLAY_MODE_DEFAULT, type PostListDisplayMode } from "@/lib/post-list-display"
 import { defaultSiteSettingsCreateInput } from "@/lib/site-settings-defaults"
+import { DEFAULT_GOD_COMMENT_AUTO_LIKE_THRESHOLD } from "@/lib/god-comment-settings"
 import { DEFAULT_THEME_CUSTOMIZATION_SETTINGS, type BuiltInThemePreset, type EditableThemePresetDefinition, type FontSizePreset, type FontSizePresetDefinition, type ThemeCustomizationSettings, type ThemeRuntimeSettings } from "@/lib/theme"
 import type { InteractionGateCondition, InteractionGateSettings } from "@/lib/site-settings"
-import type { LeftSidebarDisplayMode, PostSlugGenerationMode, RegistrationEmailTemplateSettings, SiteSearchSettings, SiteTippingGiftItem } from "@/lib/site-settings"
+import type { LeftSidebarDisplayMode, LeftSidebarHomeSettings, PostSlugGenerationMode, RegistrationEmailTemplateSettings, SiteSearchSettings, SiteTippingGiftItem } from "@/lib/site-settings"
 import type { PasswordStrength } from "@/lib/password-policy"
 
 export interface AdminBasicSettingsInitialSettings {
@@ -43,6 +44,7 @@ export interface AdminBasicSettingsInitialSettings {
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
   leftSidebarDisplayMode: LeftSidebarDisplayMode
+  leftSidebarHome: LeftSidebarHomeSettings
   theme: ThemeRuntimeSettings
   postSlugGenerationMode: PostSlugGenerationMode
   footerCopyrightText: string
@@ -67,6 +69,7 @@ export interface AdminBasicSettingsInitialSettings {
   turnstileSecretKey?: string | null
   postEditableMinutes: number
   commentEditableMinutes: number
+  godCommentAutoLikeThreshold: number
   guestCanViewComments: boolean
   commentInitialVisibleReplies: number
   siteChatEnabled: boolean
@@ -183,6 +186,9 @@ export interface AdminBasicSettingsDraft {
   homeSidebarAnnouncementsEnabled: boolean
   userProfileIpLocationEnabled: boolean
   leftSidebarDisplayMode: LeftSidebarDisplayMode
+  leftSidebarHomeEnabled: boolean
+  leftSidebarHomeName: string
+  leftSidebarHomeIcon: string
   defaultThemePreset: BuiltInThemePreset
   defaultFontSizePreset: FontSizePreset
   fontSizePresets: Record<FontSizePreset, FontSizePresetDefinition>
@@ -194,6 +200,7 @@ export interface AdminBasicSettingsDraft {
   analyticsCode: string
   postEditableMinutes: string
   commentEditableMinutes: string
+  godCommentAutoLikeThreshold: string
   guestCanViewComments: boolean
   commentInitialVisibleReplies: string
   siteChatEnabled: boolean
@@ -415,6 +422,9 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     homeSidebarAnnouncementsEnabled: coerceBoolean(initialSettings.homeSidebarAnnouncementsEnabled, true),
     userProfileIpLocationEnabled: coerceBoolean(initialSettings.userProfileIpLocationEnabled, false),
     leftSidebarDisplayMode: initialSettings.leftSidebarDisplayMode ?? "DEFAULT",
+    leftSidebarHomeEnabled: coerceBoolean(initialSettings.leftSidebarHome?.enabled, true),
+    leftSidebarHomeName: coerceString(initialSettings.leftSidebarHome?.name, "首页"),
+    leftSidebarHomeIcon: coerceString(initialSettings.leftSidebarHome?.icon, "🏠"),
     defaultThemePreset: themeCustomization.defaultThemePreset,
     defaultFontSizePreset: themeCustomization.defaultFontSizePreset,
     fontSizePresets: themeCustomization.fontSizePresets,
@@ -426,6 +436,7 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     analyticsCode: initialSettings.analyticsCode ?? "",
     postEditableMinutes: coerceNumberString(initialSettings.postEditableMinutes, 10),
     commentEditableMinutes: coerceNumberString(initialSettings.commentEditableMinutes, 5),
+    godCommentAutoLikeThreshold: coerceNumberString(initialSettings.godCommentAutoLikeThreshold, DEFAULT_GOD_COMMENT_AUTO_LIKE_THRESHOLD),
     guestCanViewComments: coerceBoolean(initialSettings.guestCanViewComments, true),
     commentInitialVisibleReplies: coerceNumberString(initialSettings.commentInitialVisibleReplies, 10),
     siteChatEnabled: coerceBoolean(initialSettings.siteChatEnabled, false),
@@ -577,6 +588,11 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
       homeSidebarAnnouncementsEnabled: draft.homeSidebarAnnouncementsEnabled,
       userProfileIpLocationEnabled: draft.userProfileIpLocationEnabled,
       leftSidebarDisplayMode: draft.leftSidebarDisplayMode,
+      leftSidebarHome: {
+        enabled: draft.leftSidebarHomeEnabled,
+        name: draft.leftSidebarHomeName,
+        icon: draft.leftSidebarHomeIcon,
+      },
       themeCustomization: {
         defaultThemePreset: draft.defaultThemePreset,
         defaultFontSizePreset: draft.defaultFontSizePreset,
@@ -693,6 +709,7 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
     siteChatEnabled: draft.siteChatEnabled,
     postEditableMinutes: Number(draft.postEditableMinutes),
     commentEditableMinutes: Number(draft.commentEditableMinutes),
+    godCommentAutoLikeThreshold: Number(draft.godCommentAutoLikeThreshold),
     anonymousPostEnabled: draft.anonymousPostEnabled,
     anonymousPostPrice: Number(draft.anonymousPostPrice),
     anonymousPostDailyLimit: Number(draft.anonymousPostDailyLimit),

@@ -134,6 +134,7 @@ export function mapAdminCommentListItem(comment: AdminCommentPageRecord): AdminC
     authorUsername: comment.user.username,
     parentId: comment.parentId,
     likeCount: comment.likeCount,
+    isGodComment: comment.isGodComment,
     status: comment.status,
     statusLabel: getCommentStatusLabel(comment.status),
     reviewNote: comment.reviewNote ?? null,

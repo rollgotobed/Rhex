@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useRef } from "react"
 import type * as React from "react"
 import type { MutableRefObject, RefObject } from "react"
 
@@ -32,7 +32,6 @@ type UseEditorCommandsOptions = {
   disabled: boolean
   markdownImageUploadEnabled: boolean
   uploading: boolean
-  uploadResultsCount: number
   fileInputRef: RefObject<HTMLInputElement | null>
   selectionRef: MutableRefObject<EditorSelectionRange>
   getEditorState: (element?: HTMLTextAreaElement | null) => MarkdownEditorState
@@ -66,7 +65,6 @@ export function useEditorCommands({
   disabled,
   markdownImageUploadEnabled,
   uploading,
-  uploadResultsCount,
   fileInputRef,
   selectionRef,
   getEditorState,
@@ -94,6 +92,8 @@ export function useEditorCommands({
   closeTablePanel,
   closeBase64Dialog,
 }: UseEditorCommandsOptions) {
+  const touchToolbarPointerDownAtRef = useRef(0)
+
   const applyWrap = useCallback((before: string, after = "") => {
     applyEditorUpdate(wrapSelection(getEditorState(), before, after))
   }, [applyEditorUpdate, getEditorState])
@@ -120,13 +120,24 @@ export function useEditorCommands({
       return
     }
 
-    if (uploadResultsCount > 0 && !uploading) {
-      toggleImagePanel()
+    if (uploading) {
+      openImagePanel()
       return
     }
 
     fileInputRef.current?.click()
-  }, [fileInputRef, markdownImageUploadEnabled, toggleImagePanel, uploadResultsCount, uploading])
+  }, [fileInputRef, markdownImageUploadEnabled, openImagePanel, toggleImagePanel, uploading])
+
+  const handleToolbarPointerDown = useCallback((event: React.PointerEvent<HTMLElement>) => {
+    if (disabled) {
+      return
+    }
+
+    if (event.pointerType !== "mouse") {
+      touchToolbarPointerDownAtRef.current = Date.now()
+      syncSelection()
+    }
+  }, [disabled, syncSelection])
 
   const handleToolbarMouseDown = useCallback((event: React.MouseEvent<HTMLElement>) => {
     if (disabled) {
@@ -134,6 +145,19 @@ export function useEditorCommands({
     }
 
     syncSelection()
+
+    const nativeEvent = event.nativeEvent as MouseEvent & {
+      sourceCapabilities?: {
+        firesTouchEvents?: boolean
+      }
+    }
+    const isTouchGeneratedMouseEvent =
+      nativeEvent.sourceCapabilities?.firesTouchEvents === true
+      || Date.now() - touchToolbarPointerDownAtRef.current < 700
+    if (isTouchGeneratedMouseEvent) {
+      return
+    }
+
     event.preventDefault()
   }, [disabled, syncSelection])
 
@@ -322,6 +346,7 @@ export function useEditorCommands({
   }, [applyWrap])
 
   return {
+    handleToolbarPointerDown,
     handleToolbarMouseDown,
     handleToolbarSelectMouseDown,
     handleToolbarSelectOpenChange,

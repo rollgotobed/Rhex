@@ -18,6 +18,7 @@ export async function toggleCommentLike(params: {
       id: true,
       userId: true,
       content: true,
+      likeCount: true,
     },
   })
 
@@ -43,12 +44,15 @@ export async function toggleCommentLike(params: {
       targetUserId,
       notificationTargetUserId: comment && comment.userId !== params.userId ? comment.userId : null,
       commentPreview: comment?.content.slice(0, 80) ?? "",
+      likeCount: Math.max(0, (comment?.likeCount ?? 1) - 1),
     }
   } catch (error) {
     if (!isPrismaKnownError(error, "P2025")) {
       throw error
     }
   }
+
+  let nextLikeCount = comment?.likeCount ?? 0
 
   await prisma.$transaction(async (tx) => {
     try {
@@ -68,7 +72,12 @@ export async function toggleCommentLike(params: {
       return
     }
 
-    await tx.comment.update({ where: { id: params.commentId }, data: { likeCount: { increment: 1 } } })
+    const updatedComment = await tx.comment.update({
+      where: { id: params.commentId },
+      data: { likeCount: { increment: 1 } },
+      select: { likeCount: true },
+    })
+    nextLikeCount = updatedComment.likeCount
   })
 
   return {
@@ -76,6 +85,7 @@ export async function toggleCommentLike(params: {
     targetUserId,
     notificationTargetUserId: comment && comment.userId !== params.userId ? comment.userId : null,
     commentPreview: comment?.content.slice(0, 80) ?? "",
+    likeCount: nextLikeCount,
   }
 }
 

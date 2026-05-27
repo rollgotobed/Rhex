@@ -12,6 +12,7 @@ import { getBoards, type SiteBoardItem } from "@/lib/boards"
 import { getLevelDefinitions } from "@/lib/level-system"
 import { getAutoCategorizeConfig } from "@/lib/ai/capabilities/auto-categorize-config"
 import { parsePostContentDocument } from "@/lib/post-content"
+import { replacePostCardEmbedTokensWithUrls } from "@/lib/post-card-embed"
 import { parsePostRewardPoolConfigFromContent } from "@/lib/post-red-packets"
 import { getEditablePostBySlug } from "@/lib/posts"
 import { normalizeLotteryRedemptionCodes } from "@/lib/lottery-prizes"
@@ -210,14 +211,14 @@ export default async function WritePage(props: PageProps<"/write">) {
                     postLinkDisplayMode={settings.postLinkDisplayMode}
                     initialValues={{
                     title: editingPost.title,
-                    content: publicBlock?.text ?? editingPost.content,
+                    content: replacePostCardEmbedTokensWithUrls(publicBlock?.text ?? editingPost.content),
                     isAnonymous: editingPost.isAnonymous,
                     coverPath: editingPost.coverPath,
                     commentsVisibleToAuthorOnly: editingPost.commentsVisibleToAuthorOnly,
-                    loginUnlockContent: loginUnlockBlock?.text ?? "",
-                    replyUnlockContent: replyUnlockBlock?.text ?? "",
+                    loginUnlockContent: replacePostCardEmbedTokensWithUrls(loginUnlockBlock?.text ?? ""),
+                    replyUnlockContent: replacePostCardEmbedTokensWithUrls(replyUnlockBlock?.text ?? ""),
                     replyThreshold: replyUnlockBlock?.replyThreshold ?? 1,
-                    purchaseUnlockContent: purchaseUnlockBlock?.text ?? "",
+                    purchaseUnlockContent: replacePostCardEmbedTokensWithUrls(purchaseUnlockBlock?.text ?? ""),
                     purchasePrice: purchaseUnlockBlock?.price ?? null,
                     minViewLevel: editingPost.minViewLevel,
                     minViewVipLevel: editingPost.minViewVipLevel,

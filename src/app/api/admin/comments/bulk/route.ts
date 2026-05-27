@@ -9,6 +9,8 @@ const BATCH_COMMENT_ACTIONS = new Set([
   "comment.hide",
   "comment.show",
   "comment.delete",
+  "comment.markGod",
+  "comment.unmarkGod",
 ])
 
 function readCommentIds(body: JsonObject) {

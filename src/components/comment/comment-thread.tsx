@@ -62,6 +62,14 @@ interface CommentListApiPayload {
   viewMode: "tree" | "flat"
 }
 
+interface GodCommentApiPayload {
+  message?: string
+  data?: {
+    isGodComment?: boolean
+    page?: number
+  }
+}
+
 function buildPageTokens(page: number, totalPages: number): PaginationToken[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1)
@@ -138,6 +146,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({})
   const [submittingAnswerId, setSubmittingAnswerId] = useState<string | null>(null)
   const [pinningCommentId, setPinningCommentId] = useState<string | null>(null)
+  const [markingGodCommentId, setMarkingGodCommentId] = useState<string | null>(null)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [actionMessage, setActionMessage] = useState("")
   const [replyTarget, setReplyTarget] = useState<CommentReplyTarget | null>(null)
@@ -621,6 +630,10 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
 
   function sortRootComments(items: SiteCommentItem[]) {
     return [...items].sort((left, right) => {
+      if (left.isGodComment !== right.isGodComment) {
+        return left.isGodComment ? -1 : 1
+      }
+
       if (left.isPinnedByAuthor !== right.isPinnedByAuthor) {
         return left.isPinnedByAuthor ? -1 : 1
       }
@@ -639,6 +652,13 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
 
   function sortFlatCommentItems(items: SiteFlatCommentItem[]) {
     return [...items].sort((left, right) => {
+      const leftGodComment = left.type === "comment" ? left.comment.isGodComment : false
+      const rightGodComment = right.type === "comment" ? right.comment.isGodComment : false
+
+      if (leftGodComment !== rightGodComment) {
+        return leftGodComment ? -1 : 1
+      }
+
       const leftPinned = left.type === "comment" ? left.comment.isPinnedByAuthor : false
       const rightPinned = right.type === "comment" ? right.comment.isPinnedByAuthor : false
 
@@ -670,14 +690,17 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
     rootUpdater?: (comment: SiteCommentItem) => SiteCommentItem
     replyUpdater?: (reply: SiteCommentReplyItem) => SiteCommentReplyItem
   }) {
+    const hasTargetFilter = Boolean(params.targetId) || typeof params.targetAuthorId === "number"
+
     setLocalComments((current) => sortRootComments(current.map((comment) => {
-      const nextComment = params.targetId === comment.id || (typeof params.targetAuthorId === "number" && comment.authorId === params.targetAuthorId)
+      const shouldUpdateComment = !hasTargetFilter || params.targetId === comment.id || (typeof params.targetAuthorId === "number" && comment.authorId === params.targetAuthorId)
+      const nextComment = shouldUpdateComment
         ? params.rootUpdater?.(comment) ?? comment
         : comment
 
       let repliesChanged = false
       const nextReplies = nextComment.replies.map((reply) => {
-        const shouldUpdateReply = params.targetId === reply.id || (typeof params.targetAuthorId === "number" && reply.authorId === params.targetAuthorId)
+        const shouldUpdateReply = !hasTargetFilter || params.targetId === reply.id || (typeof params.targetAuthorId === "number" && reply.authorId === params.targetAuthorId)
         if (!shouldUpdateReply) {
           return reply
         }
@@ -697,7 +720,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
 
     setLocalFlatComments((current) => sortFlatCommentItems(current.map((entry) => {
       if (entry.type === "comment") {
-        if (params.targetId !== entry.comment.id && !(typeof params.targetAuthorId === "number" && entry.comment.authorId === params.targetAuthorId)) {
+        if (hasTargetFilter && params.targetId !== entry.comment.id && !(typeof params.targetAuthorId === "number" && entry.comment.authorId === params.targetAuthorId)) {
           return entry
         }
 
@@ -707,7 +730,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
         }
       }
 
-      if (params.targetId !== entry.reply.id && !(typeof params.targetAuthorId === "number" && entry.reply.authorId === params.targetAuthorId)) {
+      if (hasTargetFilter && params.targetId !== entry.reply.id && !(typeof params.targetAuthorId === "number" && entry.reply.authorId === params.targetAuthorId)) {
         return entry
       }
 
@@ -908,6 +931,53 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
     router.replace(buildCommentHref({ page: 1, view: nextView }))
   }
 
+  async function toggleGodComment(commentId: string, nextAction: "mark" | "unmark") {
+    setMarkingGodCommentId(commentId)
+    setActionMessage("")
+
+    try {
+      const response = await fetch("/api/posts/god-comment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          commentId,
+          action: nextAction,
+          sort: currentSort,
+          view: currentDisplayMode,
+          pageSize,
+        }),
+      })
+
+      const result = await response.json().catch(() => null) as GodCommentApiPayload | null
+      setActionMessage(result?.message ?? (response.ok ? "操作成功" : "操作失败"))
+
+      if (!response.ok) {
+        return
+      }
+
+      const nextIsGodComment = result?.data?.isGodComment ?? nextAction === "mark"
+      patchCommentThreadEntries({
+        rootUpdater: (comment) => ({
+          ...comment,
+          isGodComment: nextIsGodComment ? comment.id === commentId : false,
+        }),
+      })
+      triggerCommentHighlight(commentId)
+
+      const targetPage = Math.max(1, result?.data?.page ?? currentPage)
+      router.replace(buildCommentHighlightHref(commentId, { page: targetPage }), { scroll: true })
+      if (commentLoadMode === COMMENT_LOAD_MODE_PAGINATION && targetPage === currentPage) {
+        router.refresh()
+      }
+    } catch {
+      setActionMessage("操作失败")
+    } finally {
+      setMarkingGodCommentId(null)
+    }
+  }
+
   function changeCommentSort(nextSort: "oldest" | "newest") {
     updateBrowsingPreferences({ commentThreadSort: nextSort })
     router.replace(buildCommentHref({ sort: nextSort, page: 1 }))
@@ -992,6 +1062,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
             commentEditWindowMinutes={commentEditWindowMinutes}
             editingCommentId={editingCommentId}
             pinningCommentId={pinningCommentId}
+            markingGodCommentId={markingGodCommentId}
             submittingAnswerId={submittingAnswerId}
             hideFloatingActionButtons={hideFloatingActionButtons}
             isHighlighted={highlightedCommentId === comment.id}
@@ -1004,6 +1075,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
             onRunAdminAction={runAdminAction}
             onOfflineComment={offlineComment}
             onTogglePinnedComment={togglePinnedComment}
+            onToggleGodComment={toggleGodComment}
             onStartEdit={startEdit}
             onStopEdit={stopEdit}
             canEditComment={canEditComment}
@@ -1033,6 +1105,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
                 commentEditWindowMinutes={commentEditWindowMinutes}
                 editingCommentId={editingCommentId}
                 pinningCommentId={pinningCommentId}
+                markingGodCommentId={markingGodCommentId}
                 submittingAnswerId={submittingAnswerId}
                 hideFloatingActionButtons={hideFloatingActionButtons}
                 isHighlighted={highlightedCommentId === entry.comment.id}
@@ -1045,6 +1118,7 @@ export function CommentThread({ threadId, comments, flatComments = [], postId, p
                 onRunAdminAction={runAdminAction}
                 onOfflineComment={offlineComment}
                 onTogglePinnedComment={togglePinnedComment}
+                onToggleGodComment={toggleGodComment}
                 onStartEdit={startEdit}
                 onStopEdit={stopEdit}
                 canEditComment={canEditComment}

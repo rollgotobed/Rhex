@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState, type ReactNode } from "react"
-import { CornerDownRight, Flag, Lock } from "lucide-react"
+import { CornerDownRight, Flag, Lock, MessageCircleHeart } from "lucide-react"
 
 import { AddonSurfaceClientRenderer } from "@/addons-host/client/addon-surface-client-renderer"
 import { AiAgentIndicator } from "@/components/user/ai-agent-indicator"
@@ -61,6 +61,7 @@ interface CommentThreadCommentItemProps {
   commentEditWindowMinutes: number
   editingCommentId: string | null
   pinningCommentId: string | null
+  markingGodCommentId: string | null
   submittingAnswerId: string | null
   hideFloatingActionButtons: boolean
   highlightedCommentId?: string | null
@@ -72,6 +73,7 @@ interface CommentThreadCommentItemProps {
   onRunAdminAction: (action: string, targetId: string, extra?: Record<string, unknown>) => Promise<void>
   onOfflineComment: (commentId: string) => Promise<void>
   onTogglePinnedComment: (commentId: string, nextAction: "pin" | "unpin") => Promise<void>
+  onToggleGodComment: (commentId: string, nextAction: "mark" | "unmark") => Promise<void>
   onStartEdit: (commentId: string) => void
   onStopEdit: () => void
   canEditComment: (comment: ThreadEntry) => boolean
@@ -665,6 +667,7 @@ export function CommentThreadCommentItem({
   commentEditWindowMinutes,
   editingCommentId,
   pinningCommentId,
+  markingGodCommentId,
   submittingAnswerId,
   hideFloatingActionButtons,
   highlightedCommentId = null,
@@ -676,6 +679,7 @@ export function CommentThreadCommentItem({
   onRunAdminAction,
   onOfflineComment,
   onTogglePinnedComment,
+  onToggleGodComment,
   onStartEdit,
   onStopEdit,
   canEditComment,
@@ -704,6 +708,7 @@ export function CommentThreadCommentItem({
     adminRole,
     canPinComment,
     pinningCommentId,
+    markingGodCommentId,
     currentUserId,
     canOfflineOwnComment,
     canOfflineUserComment,
@@ -720,10 +725,23 @@ export function CommentThreadCommentItem({
     <div
       id={`comment-${comment.id}`}
       className={cn(
-        index === 0 ? "group relative scroll-mt-20 py-4 sm:scroll-mt-24" : "group relative scroll-mt-20 border-t border-border/70 py-4 sm:scroll-mt-24",
+        "group relative scroll-mt-20 sm:scroll-mt-24",
+        comment.isGodComment
+          ? "rounded-lg border border-primary/40 bg-primary/5 px-3 py-4 shadow-xs"
+          : comment.isPinnedByAuthor
+            ? "rounded-lg border border-amber-300/70 bg-amber-50/70 px-3 py-4 shadow-xs dark:border-amber-400/40 dark:bg-amber-500/10"
+          : index === 0
+            ? "py-4"
+            : "border-t border-border/70 py-4",
         isHighlighted && "rounded-xl bg-amber-50/70 ring-2 ring-amber-300/70 ring-offset-2 ring-offset-background dark:bg-amber-500/10 dark:ring-amber-400/40",
       )}
     >
+      {comment.isGodComment ? (
+        <div className="pointer-events-none absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">
+          <MessageCircleHeart aria-hidden="true" />
+          神评
+        </div>
+      ) : null}
       <div className="text-sm text-muted-foreground">
         <CommentAuthorRowContent
           entry={comment}
@@ -814,6 +832,14 @@ export function CommentThreadCommentItem({
                         }
                         if (action.key === "comment.unpinByAuthor") {
                           void onTogglePinnedComment(comment.id, "unpin")
+                          return
+                        }
+                        if (action.key === "comment.markGod") {
+                          void onToggleGodComment(comment.id, "mark")
+                          return
+                        }
+                        if (action.key === "comment.unmarkGod") {
+                          void onToggleGodComment(comment.id, "unmark")
                           return
                         }
                         if (action.key === "comment.offline") {

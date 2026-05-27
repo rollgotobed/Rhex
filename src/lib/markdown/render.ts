@@ -15,6 +15,7 @@ import { renderUserLinkTokens } from "@/lib/mentions"
 import { renderMarkdownEmojiHtml, type MarkdownEmojiItem } from "@/lib/markdown-emoji"
 import { isSupportedMarkdownEmbedSrc, normalizeMarkdownMediaSrc } from "@/lib/markdown/media"
 import { escapeHtml } from "@/lib/markdown/shared"
+import { renderPostCardEmbedHtml } from "@/lib/post-card-embed"
 
 interface MarkdownHeadingToken {
   tag: string
@@ -404,11 +405,12 @@ function decorateMarkdownImages(html: string) {
   return html.replace(/<img\b([^>]*)>/gi, (_matched, rawAttrs: string) => {
     let attrs = rawAttrs
     const isEmojiImage = /\bclass\s*=\s*"[^"]*\bmd-emoji-icon\b/i.test(attrs)
+    const isPostCardImage = /\bclass\s*=\s*"[^"]*\bmd-post-card-(?:cover-image|avatar)\b/i.test(attrs)
 
     attrs = appendHtmlAttributeIfMissing(attrs, "loading", "lazy")
     attrs = appendHtmlAttributeIfMissing(attrs, "decoding", "async")
 
-    if (isEmojiImage) {
+    if (isEmojiImage || isPostCardImage) {
       return `<img${attrs}>`
     }
 
@@ -976,6 +978,13 @@ export function renderMarkdown(input: string, emojiItems: MarkdownEmojiItem[]) {
   }
 
   for (const line of lines) {
+    const postCardHtml = renderPostCardEmbedHtml(line.trim())
+    if (postCardHtml) {
+      flushMarkdownBuffer()
+      htmlChunks.push(postCardHtml)
+      continue
+    }
+
     const mediaHtml = renderMediaToken(line.trim())
     if (mediaHtml) {
       flushMarkdownBuffer()

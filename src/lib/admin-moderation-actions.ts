@@ -15,6 +15,7 @@ import { revalidateContentListCaches } from "@/lib/content-list-cache"
 import { revalidateHomeSidebarStatsCache } from "@/lib/home-sidebar-stats"
 import { ensureCanEditBoard, ensureCanManageComment } from "@/lib/moderator-permissions"
 import { createSystemNotification } from "@/lib/notification-writes"
+import { toggleGodCommentByAdmin } from "@/lib/god-comments"
 import { recordApprovedCommentTaskEvent } from "@/lib/task-center-service"
 import { expireTaxonomyCacheImmediately } from "@/lib/taxonomy-cache"
 
@@ -187,6 +188,41 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
       revalidatePaths: [`/posts/${comment.post.slug}`, `/boards/${comment.post.board.slug}`, "/admin", "/notifications", "/"],
     }
   }),
+  "comment.markGod": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员设置神评" }, async (context) => {
+    const comment = await ensureCanManageComment(context.actor, context.targetId)
+    if (comment.parentId) {
+      apiError(400, "仅支持将一级评论设为神评")
+    }
+    if (comment.status !== CommentStatus.NORMAL) {
+      apiError(400, "仅正常评论可设为神评")
+    }
+    await toggleGodCommentByAdmin({
+      commentId: context.targetId,
+      adminUserId: context.adminUserId,
+      action: "mark",
+    })
+    await writeAdminActionLog(context, adminModerationActionHandlers["comment.markGod"].metadata)
+    return {
+      message: "评论已设为神评",
+      revalidatePaths: [`/posts/${comment.post.slug}`, "/admin"],
+    }
+  }),
+  "comment.unmarkGod": defineAdminAction({ targetType: "COMMENT", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员取消神评" }, async (context) => {
+    const comment = await ensureCanManageComment(context.actor, context.targetId)
+    if (comment.parentId) {
+      apiError(400, "仅支持操作一级评论")
+    }
+    await toggleGodCommentByAdmin({
+      commentId: context.targetId,
+      adminUserId: context.adminUserId,
+      action: "unmark",
+    })
+    await writeAdminActionLog(context, adminModerationActionHandlers["comment.unmarkGod"].metadata)
+    return {
+      message: "已取消神评",
+      revalidatePaths: [`/posts/${comment.post.slug}`, "/admin"],
+    }
+  }),
   "board.togglePosting": defineAdminAction({ targetType: "BOARD", revalidatePaths: ["/", "/admin"], buildDetail: () => "管理员切换版块发帖权限" }, async (context) => {
     await ensureCanEditBoard(context.actor, context.targetId)
     const board = await findBoardPostingState(context.targetId)
@@ -209,4 +245,3 @@ export const adminModerationActionHandlers: Record<string, AdminActionDefinition
     return { message: nextStatus === BoardStatus.HIDDEN ? "版块已隐藏" : "版块已恢复显示" }
   }),
 }
-

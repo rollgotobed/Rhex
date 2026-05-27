@@ -27,7 +27,7 @@ function buildPreviewContentCacheKey(input: {
   return JSON.stringify({
     content: input.contentMarkdown,
     media: input.previewMedia ? `${input.previewMedia.type}:${input.previewMedia.src}` : "",
-    emoji: input.markdownEmojiMap.map((item) => [item.shortcode, item.icon, item.label]),
+    emoji: input.markdownEmojiMap.map((item) => [item.shortcode, item.icon, item.label, item.displaySize]),
   })
 }
 

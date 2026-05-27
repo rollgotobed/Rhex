@@ -533,17 +533,22 @@
   }
 
   .markdown-body .md-emoji-svg {
-    width: 2em;
-    height: 2em;
+    width: var(--md-emoji-size, 2em);
+    height: var(--md-emoji-size, 2em);
     vertical-align: -0.125em;
   }
 
   .markdown-body .md-emoji-image {
-    min-width: 2em;
-    min-height: 2em;
-    max-width: 6em;
-    max-height: 6em;
+    min-width: var(--md-emoji-size, 2em);
+    min-height: var(--md-emoji-size, 2em);
+    max-width: var(--md-emoji-size, 6em);
+    max-height: var(--md-emoji-size, 6em);
     vertical-align: -0.125em;
+  }
+
+  .markdown-body .md-emoji-image[data-display-size] {
+    width: var(--md-emoji-size);
+    height: var(--md-emoji-size);
   }
 
   .markdown-body .md-emoji-svg .md-emoji-icon {
@@ -637,9 +642,20 @@
     width: auto;
     height: auto;
     object-fit: contain;
-    max-width: 6em;
-    max-height: 6em;
+    max-width: var(--md-emoji-size, 6em);
+    max-height: var(--md-emoji-size, 6em);
     flex: none;
+  }
+
+  .markdown-body .md-emoji-image[data-display-size] .md-emoji-icon {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .markdown-body .md-emoji-text[data-display-size] {
+    font-size: var(--md-emoji-size);
   }
 
   .markdown-body .md-mermaid-source {

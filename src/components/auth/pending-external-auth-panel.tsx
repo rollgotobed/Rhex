@@ -1,10 +1,10 @@
 "use client"
 
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
+import { normalizeAuthRedirectTarget } from "@/lib/auth-redirect"
 import type { PendingExternalAuthState } from "@/lib/external-auth-types"
 
 interface PendingExternalAuthPanelProps {
@@ -12,7 +12,6 @@ interface PendingExternalAuthPanelProps {
 }
 
 export function PendingExternalAuthPanel({ state }: PendingExternalAuthPanelProps) {
-  const router = useRouter()
   const [username, setUsername] = useState(state.usernameSuggestions[0] ?? state.usernameCandidate ?? "")
   const [inviteCode, setInviteCode] = useState("")
   const [login, setLogin] = useState("")
@@ -36,9 +35,7 @@ export function PendingExternalAuthPanel({ state }: PendingExternalAuthPanelProp
         throw new Error(result.message ?? "提交用户名失败")
       }
 
-      toast.success("用户名已确认，正在进入首页…", "认证完成")
-      router.replace(result.data?.redirectTo ?? "/")
-      router.refresh()
+      window.location.replace(normalizeAuthRedirectTarget(result.data?.redirectTo))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "提交用户名失败", "认证失败")
     } finally {
@@ -63,9 +60,7 @@ export function PendingExternalAuthPanel({ state }: PendingExternalAuthPanelProp
         throw new Error(result.message ?? "绑定已有账户失败")
       }
 
-      toast.success("账户已绑定，正在进入首页…", "绑定成功")
-      router.replace(result.data?.redirectTo ?? "/")
-      router.refresh()
+      window.location.replace(normalizeAuthRedirectTarget(result.data?.redirectTo))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "绑定已有账户失败", "绑定失败")
     } finally {
