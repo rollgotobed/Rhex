@@ -473,6 +473,7 @@ export function useCreatePostDraft({
     addExternalAttachment: attachments.addExternalAttachment,
     updateAttachment: attachments.updateAttachment,
     removeAttachment: attachments.removeAttachment,
+    uploadAttachmentFiles: attachments.uploadAttachmentFiles,
     handleAttachmentUpload: attachments.handleAttachmentUpload,
     handleCoverUpload: attachments.handleCoverUpload,
     handleCloseTagModal: tags.handleCloseTagModal,

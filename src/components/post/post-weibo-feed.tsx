@@ -252,6 +252,8 @@ function PostNoteActions({ item, postPath }: { item: PostStreamDisplayItem; post
         {item.tipping ? (
           <PostTipPanel
             postId={item.id}
+            postSlug={item.slug}
+            loginRedirectTarget={postPath}
             enabled={item.tipping.enabled}
             isLoggedIn={item.tipping.isLoggedIn}
             pointName={item.tipping.pointName}

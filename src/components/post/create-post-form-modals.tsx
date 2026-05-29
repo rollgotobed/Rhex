@@ -59,6 +59,7 @@ export function CreatePostFormModals({
     handleCloseTagModal,
     handleCoverUpload,
     handleAttachmentUpload,
+    uploadAttachmentFiles,
     handleTagInputConfirm,
     applyAutoTagsToManual,
     addManualTag,
@@ -123,6 +124,7 @@ export function CreatePostFormModals({
         uploading={attachmentUploading}
         onClose={() => setAttachmentModalOpen(false)}
         onUpload={handleAttachmentUpload}
+        onUploadFiles={uploadAttachmentFiles}
         onAddExternal={addExternalAttachment}
         onRemove={removeAttachment}
         onAttachmentChange={updateAttachment}

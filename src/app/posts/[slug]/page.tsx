@@ -428,6 +428,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
               markdownEmojiMap: settings.markdownEmojiMap,
               pathname: canonicalPath,
               searchParams: postPageSearchParams,
+              allowedOrigins: [new URL(canonicalUrl).origin],
             })
           : ""
 
@@ -444,6 +445,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
           markdownEmojiMap: settings.markdownEmojiMap,
           pathname: canonicalPath,
           searchParams: postPageSearchParams,
+          allowedOrigins: [new URL(canonicalUrl).origin],
         }),
       })),
     ),
@@ -500,7 +502,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
                 </CardContent>
               </Card>
             ) : !canViewRestrictedPost && canViewPublicPost ? (
-              <AccessDeniedCard title="当前帖子暂不可查看" description="该帖子所在节点、分区或帖子本身设置了浏览门槛，未满足条件的用户无法查看帖子正文与互动内容。" reason={mergedViewPermission.message || "当前没有访问权限"} isLoggedIn={Boolean(currentUser)} />
+              <AccessDeniedCard title="当前帖子暂不可查看" description="该帖子所在节点、分区或帖子本身设置了浏览门槛，未满足条件的用户无法查看帖子正文与互动内容。" reason={mergedViewPermission.message || "当前没有访问权限"} isLoggedIn={Boolean(currentUser)} redirectTarget={`/posts/${params.slug}`} />
             ) : (
 
               <>
@@ -598,7 +600,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
                         {displayPost.lottery || displayPost.auction ? (
                           <div className="space-y-4">
                             {displayPost.lottery ? <LotteryPanel postId={displayPost.id} lottery={displayPost.lottery} isOwnerOrAdmin={isOwnerOrManager} /> : null}
-                            {displayPost.auction ? <PostAuctionPanel postId={displayPost.id} auction={displayPost.auction} pointName={settings.pointName} currentUserId={currentUser?.id} /> : null}
+                            {displayPost.auction ? <PostAuctionPanel postId={displayPost.id} postSlug={displayPost.slug} auction={displayPost.auction} pointName={settings.pointName} currentUserId={currentUser?.id} /> : null}
                           </div>
                         ) : null}
 
@@ -606,6 +608,7 @@ export default async function PostPage(props: PageProps<"/posts/[slug]">) {
 
                       <PostEngagementBar
                         postId={displayPost.id}
+                        postSlug={displayPost.slug}
                         author={sidebarData.author}
                         likeCount={displayPost.stats.likes}
                         favoriteCount={displayPost.stats.favorites}

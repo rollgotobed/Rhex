@@ -26,8 +26,27 @@ const getCachedHomeSidebarStats = cache(async () => {
   return getPersistentHomeSidebarStats()
 })
 
+function isMissingRevalidateStoreError(error: unknown) {
+  return error instanceof Error
+    && error.message.startsWith("Invariant: static generation store missing in revalidateTag")
+}
+
+function isRenderPhaseRevalidateError(error: unknown) {
+  return error instanceof Error
+    && error.message.includes('used "revalidateTag ')
+    && error.message.includes("during render which is unsupported")
+}
+
 export function revalidateHomeSidebarStatsCache() {
-  revalidateTag(HOME_SIDEBAR_STATS_CACHE_TAG, "max")
+  try {
+    revalidateTag(HOME_SIDEBAR_STATS_CACHE_TAG, "max")
+  } catch (error) {
+    if (isMissingRevalidateStoreError(error) || isRenderPhaseRevalidateError(error)) {
+      return
+    }
+
+    throw error
+  }
 }
 
 export async function getHomeSidebarStats(): Promise<HomeSidebarStatsData> {

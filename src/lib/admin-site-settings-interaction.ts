@@ -9,6 +9,7 @@ import {
   mergeCommentAccessSettings,
   mergeHomeHotFeedSettings,
   mergeInteractionGateSettings,
+  mergeMentionRecommendationSettings,
   mergePostContentLengthSettings,
   mergePostPageSizeSettings,
   mergePostJackpotSettings,
@@ -18,6 +19,7 @@ import {
   resolveBoardTreasurySettings,
   resolveCommentAccessSettings,
   resolveHomeHotFeedSettings,
+  normalizeMentionRecommendationUsernames,
   resolvePostContentLengthSettings,
   resolvePostPageSizeSettings,
   resolvePostJackpotSettings,
@@ -45,6 +47,7 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
       ),
     )
     const commentLoadMode = normalizeCommentLoadMode(body.commentLoadMode, existingCommentAccessSettings.loadMode)
+    const mentionDefaultUsernames = normalizeMentionRecommendationUsernames(body.mentionDefaultUsernames)
     const postEditableMinutes = Math.max(0, readOptionalNumberField(body, "postEditableMinutes") ?? existing.postEditableMinutes)
     const commentEditableMinutes = Math.max(0, readOptionalNumberField(body, "commentEditableMinutes") ?? existing.commentEditableMinutes)
     const godCommentAutoLikeThreshold = Math.max(1, readOptionalNumberField(body, "godCommentAutoLikeThreshold") ?? existing.godCommentAutoLikeThreshold)
@@ -209,7 +212,10 @@ export async function updateInteractionSiteSettingsSection(existing: SiteSetting
       initialVisibleReplies: commentInitialVisibleReplies,
       loadMode: commentLoadMode,
     })
-    const appStateWithAnonymousPost = mergeAnonymousPostSettings(appStateWithCommentAccess, {
+    const appStateWithMentionRecommendations = mergeMentionRecommendationSettings(appStateWithCommentAccess, {
+      defaultUsernames: mentionDefaultUsernames,
+    })
+    const appStateWithAnonymousPost = mergeAnonymousPostSettings(appStateWithMentionRecommendations, {
       enabled: anonymousPostEnabled,
       price: anonymousPostPrice,
       dailyLimit: anonymousPostDailyLimit,

@@ -2,15 +2,17 @@ import Link from "next/link"
 
 import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 
 interface AccessDeniedCardProps {
   title: string
   description: string
   reason: string
   isLoggedIn?: boolean
+  redirectTarget?: string
 }
 
-export function AccessDeniedCard({ title, description, reason, isLoggedIn = false }: AccessDeniedCardProps) {
+export function AccessDeniedCard({ title, description, reason, isLoggedIn = false, redirectTarget = "/" }: AccessDeniedCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -23,7 +25,7 @@ export function AccessDeniedCard({ title, description, reason, isLoggedIn = fals
         </div>
         <div className="flex gap-3">
           {!isLoggedIn ? (
-            <Link href="/login">
+            <Link href={buildLoginHrefWithRedirect(redirectTarget)}>
               <Button>去登录</Button>
             </Link>
           ) : null}

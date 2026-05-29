@@ -1,11 +1,12 @@
 "use client"
 
 import { ChevronDown, FileArchive, Link2, Loader2, Trash2, Upload } from "lucide-react"
-import { useState, type ChangeEvent } from "react"
+import { useState, type ChangeEvent, type DragEvent } from "react"
 
 import { AccessThresholdSelectGroup } from "@/components/access-threshold-select-group"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
+import { cn } from "@/lib/utils"
 import type { AccessThresholdOption } from "@/lib/access-threshold-options"
 import type { LocalPostDraft } from "@/lib/post-draft"
 
@@ -65,6 +66,7 @@ interface PostAttachmentModalProps {
   uploading: boolean
   onClose: () => void
   onUpload: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>
+  onUploadFiles: (files: File[] | FileList) => void | Promise<void>
   onAddExternal: () => void
   onRemove: (index: number) => void
   onAttachmentChange: (index: number, patch: Partial<LocalPostDraft["attachments"][number]>) => void
@@ -80,14 +82,21 @@ export function PostAttachmentModal({
   uploading,
   onClose,
   onUpload,
+  onUploadFiles,
   onAddExternal,
   onRemove,
   onAttachmentChange,
 }: PostAttachmentModalProps) {
   const [expandedPermissionKeys, setExpandedPermissionKeys] = useState<Set<string>>(() => new Set())
+  const [dragActive, setDragActive] = useState(false)
   const editingDisabled = !attachmentFeature.canManage
   const canAddExternalAttachment = attachmentFeature.canAddNew && attachments.length < 20
   const canUploadAttachment = attachmentFeature.siteUploadEnabled && canAddExternalAttachment
+  const uploadAccept = attachmentFeature.allowedExtensions
+    .map((item) => item.trim().toLowerCase().replace(/^\./, ""))
+    .filter(Boolean)
+    .map((item) => `.${item}`)
+    .join(",")
   const requirementParts = [
     attachmentFeature.minUploadLevel > 0 ? `Lv.${attachmentFeature.minUploadLevel}` : null,
     attachmentFeature.minUploadVipLevel > 0 ? `VIP${attachmentFeature.minUploadVipLevel}` : null,
@@ -100,6 +109,24 @@ export function PostAttachmentModal({
     : !attachmentFeature.siteUploadEnabled
     ? "当前站内附件上传已关闭，但仍可添加网盘链接；已有附件也可以继续调整下载权限。"
     : `当前允许添加附件。支持格式：${attachmentFeature.allowedExtensions.join(", ")}，单文件不超过 ${attachmentFeature.maxFileSizeMb}MB。`
+  const uploadAreaTitle = uploading
+    ? "附件上传中..."
+    : !attachmentFeature.canAddNew
+    ? "当前账号不能上传附件"
+    : !attachmentFeature.siteUploadEnabled
+    ? "站内附件上传已关闭"
+    : attachments.length >= 20
+    ? "附件数量已满"
+    : dragActive
+    ? "松开鼠标开始上传"
+    : "拖拽文件到这里上传"
+  const uploadAreaDescription = !attachmentFeature.canAddNew
+    ? `新增附件要求：${requirementSummary}。`
+    : !attachmentFeature.siteUploadEnabled
+    ? "可以继续添加网盘附件。"
+    : attachments.length >= 20
+    ? "删除已有附件后可以继续上传。"
+    : `也可以点击选择文件，支持多选。${attachmentFeature.allowedExtensions.join(", ")}，单文件不超过 ${attachmentFeature.maxFileSizeMb}MB。`
 
   function togglePermissionSection(key: string) {
     setExpandedPermissionKeys((current) => {
@@ -111,6 +138,54 @@ export function PostAttachmentModal({
       }
       return next
     })
+  }
+
+  function handleDragEnter(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!canUploadAttachment || uploading) {
+      return
+    }
+
+    setDragActive(true)
+  }
+
+  function handleDragOver(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (!canUploadAttachment || uploading) {
+      event.dataTransfer.dropEffect = "none"
+      return
+    }
+
+    event.dataTransfer.dropEffect = "copy"
+    setDragActive(true)
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const nextTarget = event.relatedTarget
+    if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+      return
+    }
+
+    setDragActive(false)
+  }
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    event.stopPropagation()
+    setDragActive(false)
+
+    if (!canUploadAttachment || uploading) {
+      return
+    }
+
+    void onUploadFiles(event.dataTransfer.files)
   }
 
   return (
@@ -130,15 +205,58 @@ export function PostAttachmentModal({
         </div>
       )}
     >
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
+        <label
+          className={cn(
+            "hidden min-h-32 rounded-xl border border-dashed bg-card px-5 py-5 transition-colors md:flex md:items-center md:justify-center",
+            canUploadAttachment && !uploading
+              ? "cursor-pointer border-border hover:bg-accent/35"
+              : "cursor-not-allowed text-muted-foreground opacity-70",
+            dragActive && canUploadAttachment && !uploading
+              ? "border-foreground bg-accent/50"
+              : null,
+          )}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            type="file"
+            className="hidden"
+            disabled={!canUploadAttachment || uploading}
+            multiple
+            accept={uploadAccept}
+            onChange={onUpload}
+          />
+          <div className="flex items-center gap-4 text-center">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+              {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
+            </span>
+            <span className="flex flex-col gap-1 text-left">
+              <span className="text-sm font-medium">{uploadAreaTitle}</span>
+              <span className="text-xs leading-5 text-muted-foreground">
+                {uploadAreaDescription}
+              </span>
+            </span>
+          </div>
+        </label>
+
         <div className="flex flex-wrap items-center gap-2">
-          <label className={canUploadAttachment && !uploading ? "inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm transition-colors hover:bg-accent" : "inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm text-muted-foreground"}>
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          <label className={canUploadAttachment && !uploading ? "inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm transition-colors hover:bg-accent md:hidden" : "inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm text-muted-foreground md:hidden"}>
+            {uploading ? <Loader2 className="animate-spin" /> : <Upload />}
             <span>{uploading ? "上传中..." : "上传站内附件"}</span>
-            <input type="file" className="hidden" disabled={!canUploadAttachment || uploading} onChange={onUpload} />
+            <input
+              type="file"
+              className="hidden"
+              disabled={!canUploadAttachment || uploading}
+              multiple
+              accept={uploadAccept}
+              onChange={onUpload}
+            />
           </label>
           <Button type="button" variant="outline" onClick={onAddExternal} disabled={!canAddExternalAttachment}>
-            <Link2 className="mr-2 h-4 w-4" />
+            <Link2 data-icon="inline-start" />
             添加网盘附件
           </Button>
           <span className="text-xs text-muted-foreground">当前已添加 {attachments.length} / 20 个附件</span>
@@ -174,7 +292,7 @@ export function PostAttachmentModal({
                   <p className="text-sm font-medium">{attachment.name || `附件 ${index + 1}`}</p>
                 </div>
                 <Button type="button" variant="ghost" className="h-9 rounded-full px-3 text-xs" onClick={() => onRemove(index)} disabled={editingDisabled}>
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  <Trash2 data-icon="inline-start" />
                   删除
                 </Button>
               </div>
@@ -290,4 +408,3 @@ export function PostAttachmentModal({
     </Modal>
   )
 }
-

@@ -19,6 +19,7 @@ import type { SiteTippingGiftItem } from "@/lib/site-settings"
 
 interface PostEngagementBarProps {
   postId: string
+  postSlug?: string
   author?: {
     bio?: string | null
   }
@@ -59,7 +60,7 @@ interface PostEngagementBarProps {
 const engagementToggleClassName = "h-auto min-w-0 rounded-full p-0 text-muted-foreground hover:bg-transparent hover:text-foreground aria-pressed:bg-transparent aria-pressed:text-foreground data-[state=on]:bg-transparent data-[state=on]:text-foreground"
 
 
-export function PostEngagementBar({ postId, author, likeCount, favoriteCount = 0, initialLiked = false, initialFavored = false, canReport = false, reportLabel = "当前帖子", redPacket, tipping }: PostEngagementBarProps) {
+export function PostEngagementBar({ postId, postSlug, author, likeCount, favoriteCount = 0, initialLiked = false, initialFavored = false, canReport = false, reportLabel = "当前帖子", redPacket, tipping }: PostEngagementBarProps) {
 
   const [likes, setLikes] = useState(likeCount)
   const [favorites, setFavorites] = useState(favoriteCount)
@@ -178,6 +179,7 @@ export function PostEngagementBar({ postId, author, likeCount, favoriteCount = 0
             {tipping?.enabled ? (
               <PostTipPanel
                 postId={postId}
+                postSlug={postSlug}
                 enabled={tipping.enabled}
                 isLoggedIn={tipping.isLoggedIn}
                 pointName={tipping.pointName}

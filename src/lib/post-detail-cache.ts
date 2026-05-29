@@ -5,6 +5,7 @@ import { revalidateTag, unstable_cache } from "next/cache"
 
 import { renderAddonPostContentHtml } from "@/lib/addon-post-content-render"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
+import { getConfiguredSiteOrigin, normalizeSiteOrigin } from "@/lib/site-origin-config"
 
 export const POST_SEO_CACHE_TAG = "post-seo"
 export const POST_RENDERED_CONTENT_CACHE_TAG = "post-rendered-content"
@@ -17,6 +18,24 @@ function digest(value: string) {
 
 function stableJson(value: unknown) {
   return JSON.stringify(value) ?? "null"
+}
+
+function normalizeAllowedOrigins(origins: readonly string[]) {
+  const normalizedOrigins: string[] = []
+
+  for (const origin of origins) {
+    try {
+      const normalized = normalizeSiteOrigin(origin)
+      const url = new URL(normalized)
+      if ((url.protocol === "http:" || url.protocol === "https:") && !normalizedOrigins.includes(normalized)) {
+        normalizedOrigins.push(normalized)
+      }
+    } catch {
+      // Ignore invalid origin values from request-derived context.
+    }
+  }
+
+  return normalizedOrigins
 }
 
 export function getPostSeoCacheTag(slug: string) {
@@ -67,14 +86,20 @@ export async function renderCachedPostContentHtml(input: {
   markdownEmojiMap: MarkdownEmojiItem[]
   pathname?: string
   searchParams?: URLSearchParams | string
+  allowedOrigins?: readonly string[]
 }) {
   const pathname = input.pathname ?? ""
   const searchParamsString = typeof input.searchParams === "string"
     ? input.searchParams
     : (input.searchParams?.toString() ?? "")
+  const configuredSiteOrigin = getConfiguredSiteOrigin()
+  const allowedOrigins = normalizeAllowedOrigins([
+    ...(configuredSiteOrigin ? [configuredSiteOrigin] : []),
+    ...(input.allowedOrigins ?? []),
+  ])
   const contentDigest = digest(input.content)
   const emojiDigest = digest(stableJson(input.markdownEmojiMap))
-  const requestContextDigest = digest(`${pathname}\n${searchParamsString}`)
+  const requestContextDigest = digest(`${pathname}\n${searchParamsString}\n${stableJson(allowedOrigins)}`)
 
   return unstable_cache(
     async () => renderAddonPostContentHtml({
@@ -82,6 +107,8 @@ export async function renderCachedPostContentHtml(input: {
       markdownEmojiMap: input.markdownEmojiMap,
       pathname: pathname || undefined,
       searchParams: searchParamsString ? new URLSearchParams(searchParamsString) : undefined,
+      allowedOrigins,
+      currentPostId: input.postId,
     }),
     [
       POST_RENDERED_CONTENT_CACHE_TAG,

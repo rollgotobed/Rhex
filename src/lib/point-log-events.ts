@@ -23,6 +23,7 @@ export const POINT_LOG_EVENT_TYPES = {
   LOTTERY_PRIZE_POINTS_AWARD: "LOTTERY_PRIZE_POINTS_AWARD",
   POINTS_TOPUP: "POINTS_TOPUP",
   TASK_REWARD: "TASK_REWARD",
+  ADMIN_POINTS_ADJUST: "ADMIN_POINTS_ADJUST",
 } as const
 
 export type PointLogEventType = (typeof POINT_LOG_EVENT_TYPES)[keyof typeof POINT_LOG_EVENT_TYPES]
@@ -52,6 +53,7 @@ export const POINT_LOG_EVENT_LABELS: Record<PointLogEventType, string> = {
   LOTTERY_PRIZE_POINTS_AWARD: "抽奖中奖积分",
   POINTS_TOPUP: "积分充值",
   TASK_REWARD: "任务奖励",
+  ADMIN_POINTS_ADJUST: "后台调整",
 } as const
 
 export function normalizePointLogEventType(eventType?: string | null): PointLogEventType {

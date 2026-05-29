@@ -3,6 +3,7 @@ import { prisma } from "@/db/client"
 
 import { apiSuccess, createUserRouteHandler } from "@/lib/api-route"
 import { getAiReplyConfig } from "@/lib/ai-reply-config"
+import { getServerSiteSettings } from "@/lib/site-settings"
 
 const MENTION_SEARCH_LIMIT = 10
 
@@ -53,9 +54,17 @@ function getMatchScore(user: { username: string; nickname: string | null }, quer
 export const GET = createUserRouteHandler(async ({ request, currentUser }) => {
   const query = normalizeQuery(request)
   const includeDefaultChoices = !query
-  const config = await getAiReplyConfig()
+  const [config, settings] = await Promise.all([
+    getAiReplyConfig(),
+    getServerSiteSettings(),
+  ])
+  const customDefaultUsernames = includeDefaultChoices
+    ? settings.mentionRecommendations.defaultUsernames
+    : []
+  const customDefaultUsernameOrder = new Map(customDefaultUsernames.map((username, index) => [username.toLowerCase(), index]))
+  const useCustomDefaultChoices = customDefaultUsernames.length > 0
   const botUserIds = Array.from(new Set(
-    includeDefaultChoices && config.enabled
+    includeDefaultChoices && !useCustomDefaultChoices && config.enabled
       ? config.agents
         .filter((agent) => agent.enabled && agent.agentUserId)
         .map((agent) => agent.agentUserId)
@@ -77,7 +86,7 @@ export const GET = createUserRouteHandler(async ({ request, currentUser }) => {
           },
         })
       : Promise.resolve([]),
-    includeDefaultChoices
+    includeDefaultChoices && !useCustomDefaultChoices
       ? prisma.user.findMany({
           where: {
             id: {
@@ -102,7 +111,24 @@ export const GET = createUserRouteHandler(async ({ request, currentUser }) => {
           },
         })
       : Promise.resolve([]),
-    query
+    useCustomDefaultChoices
+      ? prisma.user.findMany({
+          where: {
+            id: { not: currentUser.id },
+            status: UserStatus.ACTIVE,
+            OR: customDefaultUsernames.map((username) => ({
+              username: { equals: username, mode: "insensitive" },
+            })),
+          },
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+            role: true,
+            level: true,
+          },
+        })
+      : query
       ? prisma.user.findMany({
           where: {
             id: {
@@ -163,6 +189,11 @@ export const GET = createUserRouteHandler(async ({ request, currentUser }) => {
     })),
     users: matchedUsers
       .sort((a, b) => {
+        if (useCustomDefaultChoices) {
+          return (customDefaultUsernameOrder.get(a.username.toLowerCase()) ?? MENTION_SEARCH_LIMIT)
+            - (customDefaultUsernameOrder.get(b.username.toLowerCase()) ?? MENTION_SEARCH_LIMIT)
+        }
+
         const scoreDelta = getMatchScore(a, query) - getMatchScore(b, query)
         if (scoreDelta !== 0) {
           return scoreDelta

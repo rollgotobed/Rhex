@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/rbutton"
 import { Tooltip } from "@/components/ui/tooltip"
 import { getHomeAnnouncements } from "@/lib/announcements"
 import { getCurrentUser } from "@/lib/auth"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { describeBadgeRule, getBadgeCenterData } from "@/lib/badges"
 import { getBoards } from "@/lib/boards"
 import { getHomeSidebarHotTopics, resolveSidebarUser } from "@/lib/home-sidebar"
@@ -240,7 +241,7 @@ export default async function BadgeDetailPage(props: BadgeDetailPageProps) {
                           {currentStatusLabel}
                         </span>
                       ) : (
-                        <Link href="/login">
+                        <Link href={buildLoginHrefWithRedirect(`/badges/${badge.code}`)}>
                           <Button className="rounded-full px-5">
                             登录后查看我的状态
                           </Button>

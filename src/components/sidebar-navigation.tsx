@@ -65,6 +65,7 @@ export function SidebarNavigation({
   const activeItemClass = "bg-[linear-gradient(135deg,rgba(255,255,255,0.1)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.08)_50%,rgba(255,255,255,0.08)_75%,transparent_75%,transparent)] bg-size-[8px_8px] font-medium text-foreground"
   const inactiveItemClass = "text-muted-foreground hover:bg-accent hover:text-foreground"
   const visibleZones = zones.filter((zone) => !zone.hiddenFromSidebar)
+  const showHomeEntry = leftSidebarHome.enabled
   const homeLabel = leftSidebarHome.name || "首页"
   const homeIcon = leftSidebarHome.icon || "🏠"
 
@@ -97,10 +98,15 @@ export function SidebarNavigation({
       >
         <ScrollArea className="forum-page-sidebar-scroll-area h-full">
           <div className="py-4">
-            <div className="mb-6">
+            <div className={cn(showHomeEntry ? "mb-6" : "mb-3")}>
               <nav className="space-y-1">
-                <div className="forum-page-sidebar-home-row flex items-center gap-2">
-                  {leftSidebarHome.enabled ? (
+                <div
+                  className={cn(
+                    "forum-page-sidebar-home-row flex items-center gap-2",
+                    !showHomeEntry && "mb-2 justify-end",
+                  )}
+                >
+                  {showHomeEntry ? (
                     <Link
                       href="/"
                       className={cn(
@@ -119,7 +125,7 @@ export function SidebarNavigation({
                     onClick={onToggle}
                     className={cn(
                       "forum-page-sidebar-toggle inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-                      !leftSidebarHome.enabled && "ml-auto",
+                      !showHomeEntry && "ml-auto",
                     )}
                     aria-label={collapsed ? "展开左侧导航" : "收起左侧导航"}
                     title={collapsed ? "展开左侧导航" : "收起左侧导航"}

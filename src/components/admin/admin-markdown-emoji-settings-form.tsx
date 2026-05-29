@@ -162,6 +162,7 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
   const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(() => new Set())
   const [groupDraft, setGroupDraft] = useState("")
   const [groupDisplaySizeDraft, setGroupDisplaySizeDraft] = useState("")
+  const [itemDisplaySizeDrafts, setItemDisplaySizeDrafts] = useState<Record<number, string>>({})
   const [moveTargetGroup, setMoveTargetGroup] = useState(() => normalizeMarkdownEmojiGroup(initialItems[0]?.group))
   const [searchQuery, setSearchQuery] = useState("")
   const [isUploadPending, startUploadTransition] = useTransition()
@@ -232,6 +233,19 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
     setGroupDisplaySizeDraft(activeGroupDisplaySize)
   }, [activeGroup, activeGroupDisplaySize])
 
+  useEffect(() => {
+    setItemDisplaySizeDrafts((current) => {
+      const next = Object.fromEntries(
+        Object.entries(current).filter(([index]) => {
+          const numericIndex = Number(index)
+          return Number.isInteger(numericIndex) && numericIndex >= 0 && numericIndex < items.length
+        }),
+      )
+
+      return Object.keys(next).length === Object.keys(current).length ? current : next
+    })
+  }, [items.length])
+
   function clearUploadInput() {
     if (uploadInputRef.current) {
       uploadInputRef.current.value = ""
@@ -254,8 +268,15 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
   }
 
   function handleItemDisplaySizeChange(index: number, value: string) {
+    setItemDisplaySizeDrafts((current) => ({ ...current, [index]: value }))
+
     if (!value.trim()) {
       updateItem(index, { displaySize: undefined })
+      setItemDisplaySizeDrafts((current) => {
+        const next = { ...current }
+        delete next[index]
+        return next
+      })
       return
     }
 
@@ -265,6 +286,18 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
     }
 
     updateItem(index, { displaySize })
+  }
+
+  function handleItemDisplaySizeBlur(index: number) {
+    setItemDisplaySizeDrafts((current) => {
+      if (!(index in current)) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next[index]
+      return next
+    })
   }
 
   function handleUploadFiles(fileList: FileList | null) {
@@ -516,14 +549,38 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
     setMoveTargetGroup(DEFAULT_MARKDOWN_EMOJI_GROUP)
   }
 
+  function resolveItemsForSubmit() {
+    if (activeGroup === ALL_GROUPS_VALUE || groupDisplaySizeDraft === activeGroupDisplaySize) {
+      return items
+    }
+
+    const hasDraft = groupDisplaySizeDraft.trim().length > 0
+    const displaySize = normalizeMarkdownEmojiDisplaySize(groupDisplaySizeDraft)
+    if (hasDraft && typeof displaySize !== "number") {
+      return null
+    }
+
+    return items.map((item) => (
+      getEmojiGroup(item) === activeConcreteGroup
+        ? withEmojiDisplaySize(item, displaySize)
+        : item
+    ))
+  }
+
   function handleSubmit() {
-    const normalizedItems = normalizeOptionalMarkdownEmojiItems(items, [])
+    const itemsForSubmit = resolveItemsForSubmit()
+    if (!itemsForSubmit) {
+      toast.warning("请输入有效的显示大小", "保存失败")
+      return
+    }
+
+    const normalizedItems = normalizeOptionalMarkdownEmojiItems(itemsForSubmit, [])
     if (normalizedItems.length === 0) {
       toast.warning("至少需要一个有效的 Markdown 表情", "保存失败")
       return
     }
 
-    if (normalizedItems.length !== items.length) {
+    if (normalizedItems.length !== itemsForSubmit.length) {
       toast.warning("存在空图标、非法短码或重复短码，请修正后再保存", "保存失败")
       return
     }
@@ -753,8 +810,9 @@ export function AdminMarkdownEmojiSettingsForm({ initialItems }: AdminMarkdownEm
                             min={MARKDOWN_EMOJI_DISPLAY_SIZE_MIN}
                             max={MARKDOWN_EMOJI_DISPLAY_SIZE_MAX}
                             step="0.1"
-                            value={formatMarkdownEmojiDisplaySize(item.displaySize)}
+                            value={itemDisplaySizeDrafts[index] ?? formatMarkdownEmojiDisplaySize(item.displaySize)}
                             onChange={(value) => handleItemDisplaySizeChange(index, value)}
+                            onBlur={() => handleItemDisplaySizeBlur(index)}
                             placeholder="默认"
                             inputClassName="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                           />

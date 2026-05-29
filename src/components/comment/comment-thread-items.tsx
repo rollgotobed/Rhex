@@ -580,6 +580,7 @@ export function CommentThreadReplyItem({
                 {tipping && currentUserId !== reply.authorId ? (
                   <PostTipPanel
                     postId={reply.postId}
+                    loginRedirectTarget={postPath}
                     endpoint="/api/comments/tip"
                     requestPayload={{ commentId: reply.id }}
                     targetLabel="评论"
@@ -797,6 +798,7 @@ export function CommentThreadCommentItem({
                 {tipping && currentUserId !== comment.authorId ? (
                   <PostTipPanel
                     postId={comment.postId}
+                    loginRedirectTarget={postPath}
                     endpoint="/api/comments/tip"
                     requestPayload={{ commentId: comment.id }}
                     targetLabel="评论"

@@ -1308,6 +1308,37 @@ export interface AddonBadgesApi {
   grant: (input: AddonBadgeGrantInput) => Promise<AddonBadgeGrantResult>
 }
 
+export type AddonFileContent = ArrayBuffer | ArrayBufferView | Blob
+
+export interface AddonFileSaveInput {
+  fileName: string
+  content?: AddonFileContent
+  buffer?: AddonFileContent
+  base64?: string
+  dataUrl?: string
+  mimeType?: string
+  folder?: string
+  bucketType?: string
+  userId?: number | null
+  username?: string | null
+  dedupe?: boolean
+}
+
+export interface AddonFileSaveResult {
+  uploadId: string | null
+  fileName: string
+  storagePath: string
+  urlPath: string
+  fileExt: string
+  fileSize: number
+  mimeType: string
+  fileHash: string
+}
+
+export interface AddonFilesApi {
+  save: (input: AddonFileSaveInput) => Promise<AddonFileSaveResult>
+}
+
 export interface AddonBoardSelectItem {
   value: string
   label: string
@@ -1366,6 +1397,7 @@ export interface AddonExecutionContextBase extends AddonRuntimeDescriptor {
   follows: AddonFollowsApi
   points: AddonPointsApi
   badges: AddonBadgesApi
+  files: AddonFilesApi
 }
 
 export type AddonLifecycleAction = "install" | "upgrade" | "uninstall"
@@ -1975,6 +2007,7 @@ export interface AddonPageChromeOptions {
   leftSidebar?: boolean
   rightSidebar?: boolean
   pageHeading?: boolean
+  contentLayout?: "default" | "wide"
 }
 
 export interface AddonPageRegistration {

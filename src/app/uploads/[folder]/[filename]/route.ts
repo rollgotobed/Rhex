@@ -4,6 +4,7 @@ import { Readable } from "stream"
 
 import { notFound } from "next/navigation"
 
+import { findLoadedAddonById } from "@/addons-host/runtime/loader"
 import { getSiteSettings } from "@/lib/site-settings"
 import { buildUploadStoragePath } from "@/lib/upload-path"
 import { getUploadMimeType, isAllowedUploadFolder, isSafeUploadSegment } from "@/lib/upload-rules"
@@ -41,8 +42,21 @@ function buildUploadHeaders(fileName: string, fileSize: number, lastModified: Da
   }
 }
 
+async function isReadableUploadFolder(folder: string) {
+  if (!isSafeUploadSegment(folder)) {
+    return false
+  }
+
+  if (isAllowedUploadFolder(folder)) {
+    return true
+  }
+
+  const addon = await findLoadedAddonById(folder)
+  return Boolean(addon && addon.enabled && !addon.loadError)
+}
+
 async function readUploadResponse(folder: string, fileName: string) {
-  if (!isAllowedUploadFolder(folder) || !isSafeUploadSegment(fileName)) {
+  if (!(await isReadableUploadFolder(folder)) || !isSafeUploadSegment(fileName)) {
     notFound()
   }
 
@@ -71,7 +85,7 @@ export async function GET(_request: Request, props: UploadRouteProps) {
 
 export async function HEAD(_request: Request, props: UploadRouteProps) {
   const params = await props.params
-  if (!isAllowedUploadFolder(params.folder) || !isSafeUploadSegment(params.filename)) {
+  if (!(await isReadableUploadFolder(params.folder)) || !isSafeUploadSegment(params.filename)) {
     notFound()
   }
 

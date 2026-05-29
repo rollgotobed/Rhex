@@ -1,4 +1,4 @@
-import type { InteractionGateSettings } from "@/lib/site-settings-app-state"
+import type { InteractionGateSettings, MentionRecommendationSettings } from "@/lib/site-settings-app-state"
 import type { SiteTippingGiftItem } from "@/lib/tipping-gifts"
 
 export interface SiteSettingsContentData {
@@ -7,6 +7,7 @@ export interface SiteSettingsContentData {
   godCommentAutoLikeThreshold: number
   guestCanViewComments: boolean
   commentInitialVisibleReplies: number
+  mentionRecommendations: MentionRecommendationSettings
   anonymousPostEnabled: boolean
   anonymousPostPrice: number
   anonymousPostDailyLimit: number

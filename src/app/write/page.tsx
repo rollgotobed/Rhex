@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { buildUserLevelThresholdOptions, buildVipLevelThresholdOptions } from "@/lib/access-threshold-options"
 import { getCurrentUser } from "@/lib/auth"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { getBoards, type SiteBoardItem } from "@/lib/boards"
 import { getLevelDefinitions } from "@/lib/level-system"
 import { getAutoCategorizeConfig } from "@/lib/ai/capabilities/auto-categorize-config"
@@ -115,7 +116,7 @@ export default async function WritePage(props: PageProps<"/write">) {
               </CardHeader>
               <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
                 <p>为了确保每篇内容都能追溯到明确作者，当前发帖功能需要先登录后再提交。</p>
-                <Link href="/login">
+                <Link href={buildLoginHrefWithRedirect("/write")}>
                   <Button>前往登录</Button>
                 </Link>
               </CardContent>

@@ -15,6 +15,7 @@ interface ProcessInternalPostCardEmbedsOptions {
   requestUrl?: string
   requestHeaders?: Headers
   currentPostId?: string
+  allowedOrigins?: readonly string[]
 }
 
 function buildPostCardSummary(post: { summary?: string | null; content: string }) {
@@ -73,6 +74,32 @@ function resolveForwardedOrigin(headers?: Headers) {
   return `${proto}://${host}`
 }
 
+function isLocalRequestOrigin(origin: string | null | undefined) {
+  if (!origin) {
+    return false
+  }
+
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase()
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+  } catch {
+    return false
+  }
+}
+
+function resolveHeaderOrigin(value: string | null | undefined) {
+  const trimmed = value?.split(",")[0]?.trim()
+  if (!trimmed || trimmed === "null") {
+    return null
+  }
+
+  try {
+    return new URL(trimmed).origin
+  } catch {
+    return null
+  }
+}
+
 function resolveRequestOrigin(requestUrl?: string) {
   if (!requestUrl) {
     return null
@@ -91,6 +118,15 @@ function resolvePostCardAllowedOrigins(options: ProcessInternalPostCardEmbedsOpt
   appendOrigin(origins, resolveRequestOrigin(options.requestUrl))
   appendOrigin(origins, getConfiguredSiteOrigin())
   appendOrigin(origins, resolveForwardedOrigin(options.requestHeaders))
+
+  if (isLocalRequestOrigin(resolveRequestOrigin(options.requestUrl))) {
+    appendOrigin(origins, resolveHeaderOrigin(options.requestHeaders?.get("origin")))
+    appendOrigin(origins, resolveHeaderOrigin(options.requestHeaders?.get("referer")))
+  }
+
+  for (const origin of options.allowedOrigins ?? []) {
+    appendOrigin(origins, origin)
+  }
 
   return origins
 }

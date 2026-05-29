@@ -13,12 +13,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/rbutton"
 import { Tooltip } from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/toast"
+import { buildLoginHrefWithRedirect, getCurrentBrowserAuthRedirectTarget } from "@/lib/auth-redirect"
 import { formatNumber } from "@/lib/formatters"
 import type { SiteTippingGiftItem } from "@/lib/site-settings"
 import { cn } from "@/lib/utils"
 
 interface PostTipPanelProps {
   postId: string
+  postSlug?: string
+  loginRedirectTarget?: string
   endpoint?: string
   requestPayload?: Record<string, string | number | boolean | null | undefined>
   targetLabel?: string
@@ -110,6 +113,8 @@ const tipSelectionActiveClassName = [
 
 export function PostTipPanel({
   postId,
+  postSlug,
+  loginRedirectTarget,
   endpoint = "/api/posts/tip",
   requestPayload,
   targetLabel = "帖子",
@@ -153,6 +158,8 @@ export function PostTipPanel({
   const [message, setMessage] = useState("")
   const [pendingGiftConfirmation, setPendingGiftConfirmation] = useState<PendingGiftConfirmation | null>(null)
   const [isPending, startTransition] = useTransition()
+  const fallbackLoginRedirectTarget = loginRedirectTarget ?? (postSlug ? `/posts/${postSlug}` : "/")
+  const [currentLoginRedirectTarget, setCurrentLoginRedirectTarget] = useState(fallbackLoginRedirectTarget)
   const isClient = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -458,6 +465,10 @@ export function PostTipPanel({
     }
   }, [clearAnimationTimers])
 
+  useEffect(() => {
+    setCurrentLoginRedirectTarget(getCurrentBrowserAuthRedirectTarget(fallbackLoginRedirectTarget))
+  }, [fallbackLoginRedirectTarget])
+
   return (
     <>
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -644,7 +655,7 @@ export function PostTipPanel({
                   {isPending ? "打赏中..." : effectiveSelectedAmount > 0 ? `打赏 ${formatNumber(effectiveSelectedAmount)} ${pointName}` : "选择金额"}
                 </Button>
                 {!isLoggedIn ? (
-                  <Link href="/login" className="text-xs text-primary hover:opacity-80">
+                  <Link href={buildLoginHrefWithRedirect(currentLoginRedirectTarget)} className="text-xs text-primary hover:opacity-80">
                     去登录
                   </Link>
                 ) : points <= 0 ? (

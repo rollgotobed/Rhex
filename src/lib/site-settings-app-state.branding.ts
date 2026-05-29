@@ -249,7 +249,7 @@ export function normalizeLeftSidebarHomeSettings(
 ): LeftSidebarHomeSettings {
   const source = isRecord(value) ? value : {}
   const name = typeof source.name === "string" ? source.name.trim().slice(0, 24) : ""
-  const icon = typeof source.icon === "string" ? source.icon.trim().slice(0, 12) : ""
+  const icon = typeof source.icon === "string" ? source.icon.trim().slice(0, 1000) : ""
 
   return {
     enabled: typeof source.enabled === "boolean" ? source.enabled : fallback.enabled,

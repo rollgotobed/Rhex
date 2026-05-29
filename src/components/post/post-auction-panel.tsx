@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/toast"
+import { buildLoginHrefWithRedirect, getCurrentBrowserAuthRedirectTarget } from "@/lib/auth-redirect"
 import { formatDateTime, formatNumber } from "@/lib/formatters"
 import type { SitePostItem } from "@/lib/posts"
 import { cn } from "@/lib/utils"
@@ -33,11 +34,13 @@ function subscribeToHydration() {
 
 export function PostAuctionPanel({
   postId,
+  postSlug,
   auction,
   pointName,
   currentUserId,
 }: {
   postId: string
+  postSlug: string
   auction: AuctionSummary
   pointName: string
   currentUserId?: number
@@ -59,11 +62,17 @@ export function PostAuctionPanel({
     amount: number | null
   }>>([])
   const [bidValue, setBidValue] = useState<number>(auction.minNextBidAmount)
+  const fallbackLoginRedirectTarget = `/posts/${postSlug}`
+  const [currentLoginRedirectTarget, setCurrentLoginRedirectTarget] = useState(fallbackLoginRedirectTarget)
   const timing = useAuctionTiming(auction, router)
 
   useEffect(() => {
     setBidValue(auction.minNextBidAmount)
   }, [auction.minNextBidAmount])
+
+  useEffect(() => {
+    setCurrentLoginRedirectTarget(getCurrentBrowserAuthRedirectTarget(fallbackLoginRedirectTarget))
+  }, [fallbackLoginRedirectTarget])
 
   const sliderMin = auction.minNextBidAmount
   const sliderStep = Math.max(1, auction.incrementStep)
@@ -240,7 +249,7 @@ export function PostAuctionPanel({
                   {isLeadingOpenAuctionBidder ? "加价" : "出价"}
                 </Button>
               ) : !currentUserId && !timing.hasEnded ? (
-                <Link href="/login">
+                <Link href={buildLoginHrefWithRedirect(currentLoginRedirectTarget)}>
                   <Button type="button" className="h-11 w-full rounded-[16px] px-4 text-sm sm:h-12 sm:w-auto sm:px-5 sm:text-base">
                     <Gavel data-icon="inline-start" />
                     出价

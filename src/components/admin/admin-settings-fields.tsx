@@ -53,6 +53,7 @@ export function SettingsInputField({
   label,
   value,
   onChange,
+  onBlur,
   placeholder,
   type = "text",
   min,
@@ -66,6 +67,7 @@ export function SettingsInputField({
   label: string
   value: string
   onChange: (value: string) => void
+  onBlur?: () => void
   placeholder?: string
   type?: React.HTMLInputTypeAttribute
   min?: string | number
@@ -83,6 +85,7 @@ export function SettingsInputField({
         type={type}
         value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         min={min}
         max={max}

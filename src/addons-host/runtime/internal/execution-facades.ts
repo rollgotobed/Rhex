@@ -38,6 +38,7 @@ import {
   listAddonBadges,
 } from "@/addons-host/runtime/badges"
 import { adjustAddonPoints } from "@/addons-host/runtime/points"
+import { saveAddonFile } from "@/addons-host/runtime/files"
 import {
   createAddonPost,
   likeAddonPost,
@@ -51,7 +52,7 @@ import type {
 
 export type AddonDomainFacades = Pick<
   AddonExecutionContextBase,
-  "posts" | "comments" | "messages" | "notifications" | "emails" | "sms" | "follows" | "points" | "badges" | "data"
+  "posts" | "comments" | "messages" | "notifications" | "emails" | "sms" | "follows" | "points" | "badges" | "files" | "data"
 >
 
 interface DomainFacadeBuildInput {
@@ -151,6 +152,12 @@ export function buildAddonDomainFacades(
       grant: async (badgeGrantInput) => {
         assertRuntimePermission("badge:grant", `addon "${addonId}" is not allowed to grant badges`)
         return grantAddonBadge(badgeGrantInput)
+      },
+    },
+    files: {
+      save: async (fileInput) => {
+        assertRuntimePermission("file:write", `addon "${addonId}" is not allowed to write files through system storage`)
+        return saveAddonFile(addon, fileInput, input?.request)
       },
     },
     data: {

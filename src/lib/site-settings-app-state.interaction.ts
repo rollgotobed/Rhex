@@ -17,6 +17,7 @@ import type {
   InteractionGateCondition,
   InteractionGateRule,
   InteractionGateSettings,
+  MentionRecommendationSettings,
   PostContentLengthSettings,
   PostJackpotSettings,
   PostRedPacketSettings,
@@ -122,6 +123,60 @@ export function mergeSiteChatSettings(
     ...siteSettingsState,
     siteChat: {
       enabled: Boolean(input.enabled),
+    },
+  })
+}
+
+const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,20}$/
+
+export function normalizeMentionRecommendationUsernames(value: unknown): string[] {
+  const rawItems = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[，,\s]+/)
+      : []
+
+  const seen = new Set<string>()
+  const normalized: string[] = []
+
+  for (const item of rawItems) {
+    const username = typeof item === "string" ? item.trim().replace(/^@+/, "") : ""
+    const key = username.toLowerCase()
+
+    if (!USERNAME_PATTERN.test(username) || seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    normalized.push(username)
+  }
+
+  return normalized.slice(0, 20)
+}
+
+export function resolveMentionRecommendationSettings(options: {
+  appStateJson?: string | null
+} = {}): MentionRecommendationSettings {
+  const siteSettingsState = readSiteSettingsState(options.appStateJson)
+  const mentionRecommendations = isRecord(siteSettingsState.mentionRecommendations)
+    ? siteSettingsState.mentionRecommendations
+    : {}
+
+  return {
+    defaultUsernames: normalizeMentionRecommendationUsernames(mentionRecommendations.defaultUsernames),
+  }
+}
+
+export function mergeMentionRecommendationSettings(
+  appStateJson: string | null | undefined,
+  input: MentionRecommendationSettings,
+) {
+  const siteSettingsState = readSiteSettingsState(appStateJson)
+
+  return writeSiteSettingsState(appStateJson, {
+    ...siteSettingsState,
+    mentionRecommendations: {
+      defaultUsernames: normalizeMentionRecommendationUsernames(input.defaultUsernames),
     },
   })
 }

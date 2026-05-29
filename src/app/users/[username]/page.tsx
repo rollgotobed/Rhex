@@ -199,6 +199,7 @@ export default async function UserPage(props: PageProps<"/users/[username]">) {
             description="该用户已对你的访问做出限制，因此你无法查看其主页内容、动态与互动信息。"
             reason={profileAccess.reason}
             isLoggedIn={Boolean(currentUser)}
+            redirectTarget={`/users/${params.username}`}
           />
           <AddonSlotRenderer slot="user.page.after" props={userSlotProps} />
         </main>

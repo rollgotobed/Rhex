@@ -77,7 +77,7 @@ export function findActiveMentionQuery(value: string, selectionStart: number, se
 function getMentionChoices(data: MentionSearchResponse, query: string) {
   return query.trim()
     ? data.users
-    : [...data.bots, ...data.staff]
+    : [...data.bots, ...data.staff, ...data.users]
 }
 
 function getMentionChoiceKey(choice: MentionChoice) {

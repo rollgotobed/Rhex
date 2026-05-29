@@ -93,6 +93,9 @@ export default async function AddonPublicPage({ params, searchParams }: AddonPag
   const showLeftSidebar = chrome.leftSidebar === true
   const showRightSidebar = chrome.rightSidebar === true
   const showPageHeading = chrome.pageHeading !== false
+  const standaloneMainClassName = chrome.contentLayout === "wide"
+    ? "mx-auto flex w-full max-w-none flex-col gap-6 py-4"
+    : "mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6"
   const needsShellData = showLeftSidebar || showRightSidebar
   const settingsPromise = needsShellData ? getSiteSettings() : Promise.resolve(null)
   const currentUserPromise = showRightSidebar ? getCurrentUser() : Promise.resolve(null)
@@ -112,7 +115,7 @@ export default async function AddonPublicPage({ params, searchParams }: AddonPag
     ? await resolveSidebarUser(currentUser, settings)
     : null
   const mainContent = (
-    <main className={showLeftSidebar || showRightSidebar ? "py-1 pb-12 mt-6 min-w-0" : "mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6"}>
+    <main className={showLeftSidebar || showRightSidebar ? "py-1 pb-12 mt-6 min-w-0" : standaloneMainClassName}>
       <AddonSlotRenderer slot="addon.page.before" props={addonPageSlotProps} />
       <AddonSurfaceRenderer surface="addon.page" props={addonPageSlotProps}>
         <>

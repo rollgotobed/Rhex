@@ -69,13 +69,15 @@ export async function SiteHeader() {
                   <SiteLogoMark logoPath={settings.siteLogoPath} iconPath={settings.siteIconPath} />
                   <span className="sr-only">{settings.siteLogoText}</span>
                 </Link>
-                <MobileHeaderQuickActions
-                  checkInEnabled={settings.checkInEnabled}
-                  appLinks={settings.headerAppLinks}
-                  search={settings.search}
-                  zones={zones}
-                  boards={boards}
-                />
+                <Suspense fallback={null}>
+                  <MobileHeaderQuickActions
+                    checkInEnabled={settings.checkInEnabled}
+                    appLinks={settings.headerAppLinks}
+                    search={settings.search}
+                    zones={zones}
+                    boards={boards}
+                  />
+                </Suspense>
               </div>
 
               <div className="hidden flex-1 md:block">
@@ -93,7 +95,9 @@ export async function SiteHeader() {
                   <HeaderTopAppNavigation links={settings.topHeaderAppLinks} />
                 </Suspense>
                 <ThemeToggle />
-                <HeaderUserActions messageEnabled={settings.messageEnabled} />
+                <Suspense fallback={null}>
+                  <HeaderUserActions messageEnabled={settings.messageEnabled} />
+                </Suspense>
               </div>
             </div>
           </div>

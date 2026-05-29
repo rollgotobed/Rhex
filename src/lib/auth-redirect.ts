@@ -25,3 +25,21 @@ export function normalizeAuthRedirectTarget(value: unknown, fallback = AUTH_REDI
 
   return `${pathname}${url.search}${url.hash}` || fallback
 }
+
+export function buildLoginHrefWithRedirect(value: unknown, fallback = "/login") {
+  const redirectTarget = normalizeAuthRedirectTarget(value, "")
+  return redirectTarget
+    ? `/login?redirect=${encodeURIComponent(redirectTarget)}`
+    : fallback
+}
+
+export function getCurrentBrowserAuthRedirectTarget(fallback = AUTH_REDIRECT_FALLBACK) {
+  if (typeof window === "undefined") {
+    return fallback
+  }
+
+  return normalizeAuthRedirectTarget(
+    `${window.location.pathname}${window.location.search}${window.location.hash}`,
+    fallback,
+  )
+}

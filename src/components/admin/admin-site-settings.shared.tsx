@@ -12,7 +12,7 @@ import { normalizePostListDisplayMode, POST_LIST_DISPLAY_MODE_DEFAULT, type Post
 import { defaultSiteSettingsCreateInput } from "@/lib/site-settings-defaults"
 import { DEFAULT_GOD_COMMENT_AUTO_LIKE_THRESHOLD } from "@/lib/god-comment-settings"
 import { DEFAULT_THEME_CUSTOMIZATION_SETTINGS, type BuiltInThemePreset, type EditableThemePresetDefinition, type FontSizePreset, type FontSizePresetDefinition, type ThemeCustomizationSettings, type ThemeRuntimeSettings } from "@/lib/theme"
-import type { InteractionGateCondition, InteractionGateSettings } from "@/lib/site-settings"
+import type { InteractionGateCondition, InteractionGateSettings, MentionRecommendationSettings } from "@/lib/site-settings"
 import type { LeftSidebarDisplayMode, LeftSidebarHomeSettings, PostSlugGenerationMode, RegistrationEmailTemplateSettings, SiteSearchSettings, SiteTippingGiftItem } from "@/lib/site-settings"
 import type { PasswordStrength } from "@/lib/password-policy"
 
@@ -72,6 +72,7 @@ export interface AdminBasicSettingsInitialSettings {
   godCommentAutoLikeThreshold: number
   guestCanViewComments: boolean
   commentInitialVisibleReplies: number
+  mentionRecommendations: MentionRecommendationSettings
   siteChatEnabled: boolean
   anonymousPostEnabled: boolean
   anonymousPostPrice: number
@@ -203,6 +204,7 @@ export interface AdminBasicSettingsDraft {
   godCommentAutoLikeThreshold: string
   guestCanViewComments: boolean
   commentInitialVisibleReplies: string
+  mentionDefaultUsernames: string
   siteChatEnabled: boolean
   anonymousPostEnabled: boolean
   anonymousPostPrice: string
@@ -439,6 +441,7 @@ export function createAdminBasicSettingsDraft(initialSettings: AdminBasicSetting
     godCommentAutoLikeThreshold: coerceNumberString(initialSettings.godCommentAutoLikeThreshold, DEFAULT_GOD_COMMENT_AUTO_LIKE_THRESHOLD),
     guestCanViewComments: coerceBoolean(initialSettings.guestCanViewComments, true),
     commentInitialVisibleReplies: coerceNumberString(initialSettings.commentInitialVisibleReplies, 10),
+    mentionDefaultUsernames: (initialSettings.mentionRecommendations?.defaultUsernames ?? []).join("\n"),
     siteChatEnabled: coerceBoolean(initialSettings.siteChatEnabled, false),
     anonymousPostEnabled: coerceBoolean(initialSettings.anonymousPostEnabled, false),
     anonymousPostPrice: coerceNumberString(initialSettings.anonymousPostPrice, 0),
@@ -706,6 +709,7 @@ export function buildAdminBasicSettingsPayload(draft: AdminBasicSettingsDraft, m
     tippingEnabled: draft.tippingEnabled,
     guestCanViewComments: draft.guestCanViewComments,
     commentInitialVisibleReplies: Number(draft.commentInitialVisibleReplies),
+    mentionDefaultUsernames: draft.mentionDefaultUsernames,
     siteChatEnabled: draft.siteChatEnabled,
     postEditableMinutes: Number(draft.postEditableMinutes),
     commentEditableMinutes: Number(draft.commentEditableMinutes),

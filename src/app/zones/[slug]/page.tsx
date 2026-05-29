@@ -218,7 +218,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
               <AddonSurfaceRenderer surface="zone.content" props={{ ...zoneSlotProps, posts }}>
                 {!permission.allowed ? (
 
-                  <AccessDeniedCard title="当前分区暂不可访问" description={`该分区设置了${settings.pointName}、等级或 VIP 浏览门槛，未满足条件的用户无法查看分区内容。`} reason={permission.message || "当前没有访问权限"} isLoggedIn={Boolean(currentUser)} />
+                  <AccessDeniedCard title="当前分区暂不可访问" description={`该分区设置了${settings.pointName}、等级或 VIP 浏览门槛，未满足条件的用户无法查看分区内容。`} reason={permission.message || "当前没有访问权限"} isLoggedIn={Boolean(currentUser)} redirectTarget={`/zones/${params.slug}`} />
                 ) : (
                   <>
 

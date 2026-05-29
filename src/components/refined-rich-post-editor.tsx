@@ -196,7 +196,13 @@ export function RefinedRichPostEditor({
     onRestoreScrollTop: viewState.setEditorScrollTop,
   })
 
-  const { uploading, uploadResults, uploadImageFiles, clearUploadResults } = useImageUpload({
+  const {
+    uploading,
+    uploadResults,
+    uploadImageFilesForMarkdown,
+    uploadImageFiles,
+    clearUploadResults,
+  } = useImageUpload({
     uploadFolder,
     onInsert: selectionState.insertMarkdownTemplate,
   })
@@ -214,12 +220,14 @@ export function RefinedRichPostEditor({
     disabled,
     markdownImageUploadEnabled,
     uploading,
+    uploadFolder,
     fileInputRef,
     selectionRef,
     getEditorState: selectionState.getEditorState,
     applyEditorUpdate: selectionState.applyEditorUpdate,
     insertMarkdownTemplate: selectionState.insertMarkdownTemplate,
     syncSelection: selectionState.syncSelection,
+    uploadImageFilesForMarkdown: uploadImageFilesForMarkdown,
     uploadImageFiles,
     mediaUrl: panels.mediaPanel.value,
     remoteImageUrl: panels.imagePanel.remoteImageUrl,

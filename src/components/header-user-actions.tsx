@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Bell, Gem, LayoutDashboard, LogOut, Medal, MessageSquareMore, Settings, TrendingUp, User, Wallet } from "lucide-react"
 
 import { useInboxRealtime } from "@/components/inbox-realtime-provider"
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/rbutton"
 import { UserAvatar } from "@/components/user/user-avatar"
+import { buildLoginHrefWithRedirect, getCurrentBrowserAuthRedirectTarget } from "@/lib/auth-redirect"
 import { cn } from "@/lib/utils"
 import { getVipLevel, isVipActive } from "@/lib/vip-status"
 
@@ -150,6 +151,8 @@ function UserMenuContent({
 
 export function HeaderUserActions({ user: userOverride, messageEnabled = true }: HeaderUserActionsProps = {}) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { user: currentUser, loading, refresh } = useCurrentUser()
   const user = userOverride ?? (currentUser
     ? {
@@ -161,14 +164,22 @@ export function HeaderUserActions({ user: userOverride, messageEnabled = true }:
   const buildMobileSettingsHref = (tab?: UserMenuSettingsTab) => (
     tab ? `/settings?tab=${tab}&mobile=detail` : "/settings"
   )
+  const currentSearch = searchParams.toString()
+  const currentPath = `${pathname}${currentSearch ? `?${currentSearch}` : ""}`
+  const loginHref = buildLoginHrefWithRedirect(currentPath)
 
   async function handleLogout() {
+    const redirectTarget = getCurrentBrowserAuthRedirectTarget()
     await fetch("/api/auth/logout", {
       method: "POST",
       cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ redirect: redirectTarget }),
     })
     await refresh()
-    router.replace("/")
+    router.replace(redirectTarget)
     router.refresh()
   }
 
@@ -181,12 +192,12 @@ export function HeaderUserActions({ user: userOverride, messageEnabled = true }:
   if (!user) {
     return (
       <>
-        <Link href="/login" className="block sm:hidden">
+        <Link href={loginHref} className="block sm:hidden">
           <Button variant="ghost" size="icon" className="size-8 rounded-md">
             <User className="h-4 w-4" />
           </Button>
         </Link>
-        <Link href="/login" className="hidden sm:block">
+        <Link href={loginHref} className="hidden sm:block">
           <Button variant="ghost" size="icon" className="size-8 rounded-md">
             <User className="h-4 w-4" />
           </Button>

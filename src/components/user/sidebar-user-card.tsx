@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
 import { getCheckInMakeUpEarliestDateKey } from "@/lib/check-in-policy"
 import { getLocalDateKey, getMonthKey, getMonthTitle } from "@/lib/date-key"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { formatNumber } from "@/lib/formatters"
 import { resolveSiteIconPath } from "@/lib/site-branding"
 import { cn } from "@/lib/utils"
@@ -331,7 +332,7 @@ export function SidebarUserCard({ user, createPostHref = "/write", siteName = "�
         <div className="space-y-3 p-4">
           <p className="text-sm leading-6 text-muted-foreground">{siteDescription}</p>
           <div className="grid grid-cols-2 gap-2 border-t border-border/80 pt-3">
-            <Link href="/login" className="block">
+            <Link href={buildLoginHrefWithRedirect("/")} className="block">
               <Button className="h-9 w-full rounded-lg">登录</Button>
             </Link>
             <Link href="/register" className="block">

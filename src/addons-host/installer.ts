@@ -140,6 +140,7 @@ function classifyInstallPermissionRisk(permission: string) {
     "points:adjust",
     "badge:grant",
     "post:tip",
+    "file:write",
   ].includes(permission)
     ? "sensitive"
     : "normal"

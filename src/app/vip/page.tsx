@@ -9,6 +9,7 @@ import { VipBadge } from "@/components/vip/vip-badge"
 import { Button } from "@/components/ui/rbutton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCurrentUser } from "@/lib/auth"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { formatDateTime, formatNumber } from "@/lib/formatters"
 import { getSiteSettings } from "@/lib/site-settings"
 import { getVipLevel, getVipNameClass, isVipActive } from "@/lib/vip-status"
@@ -127,7 +128,7 @@ export default async function VipPage() {
                 </div>
               ) : (
                 <div className="mt-6 flex gap-3">
-                  <Link href="/login">
+                  <Link href={buildLoginHrefWithRedirect("/vip")}>
                     <Button className="bg-white text-violet-700 hover:bg-white/90">登录查看我的 VIP</Button>
                   </Link>
                 </div>

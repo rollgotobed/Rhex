@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs"
 
 import { BadgeGrantSource, Prisma, UserRole, UserStatus } from "@/db/types"
+import { prisma } from "@/db/client"
+import { countUnreadNotifications } from "@/db/notification-read-queries"
 import {
   demoteUserToUser,
   findUserAvatarProfile,
@@ -11,7 +13,6 @@ import {
   updateUserBasicProfile,
   updateUserAvatarPath,
   updateUserPasswordHash,
-  updateUserPoints,
   updateUserRole,
   updateUserStatus,
   updateUserVip,
@@ -19,6 +20,9 @@ import {
 import { createGrantedUserBadge, findBadgeSummaryById, findGrantedUserBadge, runBadgeTransaction } from "@/db/badge-queries"
 import { findUserByNicknameInsensitive } from "@/db/user-queries"
 import { createSystemNotification } from "@/lib/notification-writes"
+import { notificationEventBus } from "@/lib/notification-event-bus"
+import { applyPointDelta } from "@/lib/point-center"
+import { POINT_LOG_EVENT_TYPES } from "@/lib/point-log-events"
 
 import { apiError } from "@/lib/api-route"
 import {
@@ -119,6 +123,33 @@ function buildStatusActionMessage(actionText: string, expiration: StatusExpirati
     : `${actionText}`
 }
 
+function buildAdminPointAdjustReason(message: string) {
+  const trimmedMessage = message.trim()
+  return trimmedMessage ? `管理员调整用户积分：${trimmedMessage}` : "管理员调整用户积分"
+}
+
+function buildAdminPointAdjustNotification(params: {
+  pointName: string
+  beforePoints: number
+  afterPoints: number
+  delta: number
+  message: string
+}) {
+  const changeText = params.delta > 0
+    ? `增加 ${params.delta} ${params.pointName}`
+    : `减少 ${Math.abs(params.delta)} ${params.pointName}`
+  const message = params.message.trim()
+
+  return {
+    title: `${params.pointName}已由管理员调整`,
+    content: [
+      `你的${params.pointName}余额已由管理员${changeText}，当前余额为 ${params.afterPoints} ${params.pointName}。`,
+      `调整前余额：${params.beforePoints} ${params.pointName}。`,
+      message ? `调整说明：${message}` : null,
+    ].filter(Boolean).join("\n"),
+  }
+}
+
 export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
   "user.mute": defineAdminAction({ targetType: "USER", buildDetail: (context) => buildStatusActionMessage("管理员禁言用户", readStatusExpiration(context)) }, async (context) => {
     const userId = normalizePositiveUserId(context.targetId)
@@ -197,10 +228,90 @@ export const adminUserActionHandlers: Record<string, AdminActionDefinition> = {
     const userId = normalizePositiveUserId(context.targetId)
     if (!userId) apiError(400, "用户标识不合法")
     const points = Math.max(0, readAdminActionNumber(context.body, "points") ?? 0)
-    await updateUserPoints(userId, points)
+    const settings = await getServerSiteSettings()
+    const result = await prisma.$transaction(async (tx) => {
+      const users = await tx.$queryRaw<Array<{ username: string; points: number }>>(Prisma.sql`
+        SELECT "username", "points"
+        FROM "User"
+        WHERE "id" = ${userId}
+        FOR UPDATE
+      `)
+      const user = users[0] ?? null
+      if (!user) apiError(404, "用户不存在")
+
+      const delta = points - user.points
+      if (delta === 0) {
+        return {
+          username: user.username,
+          delta,
+          beforePoints: user.points,
+          afterPoints: user.points,
+        }
+      }
+
+      const applied = await applyPointDelta({
+        tx,
+        userId,
+        beforeBalance: user.points,
+        prepared: {
+          scopeKey: "ALL_POINT_CHANGES",
+          baseDelta: delta,
+          finalDelta: delta,
+          appliedRules: [],
+        },
+        reason: buildAdminPointAdjustReason(context.message),
+        pointName: settings.pointName,
+        eventType: POINT_LOG_EVENT_TYPES.ADMIN_POINTS_ADJUST,
+        eventData: {
+          adminUserId: context.adminUserId,
+          adminUsername: context.actor.username,
+          targetBalance: points,
+          message: context.message || null,
+        },
+        relatedType: "USER",
+        relatedId: String(userId),
+      })
+
+      const notification = buildAdminPointAdjustNotification({
+        pointName: settings.pointName,
+        beforePoints: user.points,
+        afterPoints: applied.afterBalance,
+        delta: applied.finalDelta,
+        message: context.message,
+      })
+      await createSystemNotification({
+        client: tx,
+        userId,
+        senderId: context.adminUserId,
+        relatedType: "USER",
+        relatedId: String(userId),
+        title: notification.title,
+        content: notification.content,
+      })
+
+      return {
+        username: user.username,
+        delta: applied.finalDelta,
+        beforePoints: user.points,
+        afterPoints: applied.afterBalance,
+      }
+    })
+    if (result.delta !== 0) {
+      await notificationEventBus.publish({
+        type: "notification.count",
+        userId,
+        unreadNotificationCount: await countUnreadNotifications(userId),
+        reason: "created",
+        occurredAt: new Date().toISOString(),
+      })
+    }
 
     await writeAdminActionLog(context, adminUserActionHandlers["user.points.adjust"].metadata)
-    return { message: "用户积分已更新" }
+    return {
+      message: result.delta === 0
+        ? `用户 @${result.username} 的${settings.pointName}未变化`
+        : `用户 @${result.username} 的${settings.pointName}已更新，并已写入记录与通知`,
+    }
   }),
   "user.password.update": defineAdminAction({ targetType: "USER", buildDetail: () => "管理员重置用户密码" }, async (context) => {
     if (!isSiteAdmin(context.actor)) apiError(403, "仅管理员可重置密码")

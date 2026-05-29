@@ -16,6 +16,7 @@ export const ADDON_RUNTIME_PERMISSIONS = [
   "data:write",
   "data:delete",
   "data:migrate",
+  "file:write",
   "slot:register",
   "surface:register",
   "page:public",

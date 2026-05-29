@@ -81,6 +81,7 @@ export const INTERNAL_SETTING_TABS: Record<
   ],
   interaction: [
     { key: "comments", label: "评论展示" },
+    { key: "mentions", label: "@ 推荐" },
     { key: "chat", label: "全站聊天室" },
     { key: "content-limits", label: "内容限制" },
     { key: "anonymous-post", label: "匿名发帖" },

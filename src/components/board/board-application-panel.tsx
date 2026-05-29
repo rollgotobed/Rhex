@@ -9,6 +9,7 @@ import { FormModal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
 import { showConfirm } from "@/components/ui/alert-dialog"
 import { toast } from "@/components/ui/toast"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { formatDateTime, formatNumber } from "@/lib/formatters"
 
 interface BoardApplicationPanelProps {
@@ -187,7 +188,7 @@ export function BoardApplicationPanel({ pointName, currentUser, zones, items, pe
                 申请新建节点
               </Button>
             ) : (
-              <Link href="/login" className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+              <Link href={buildLoginHrefWithRedirect("/settings?tab=board-applications")} className="inline-flex h-10 items-center justify-center rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
                 登录后申请
               </Link>
             )}
@@ -382,5 +383,4 @@ function renderUserStatus(status: "ACTIVE" | "MUTED" | "BANNED" | "INACTIVE") {
   if (status === "INACTIVE") return "未激活"
   return "正常"
 }
-
 

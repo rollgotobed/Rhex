@@ -159,6 +159,25 @@ export function AdminInteractionSettingsForm({
         </div>
       ) : null}
 
+      {activeSubTab === "mentions" ? (
+        <div className="flex flex-col gap-4 rounded-xl border border-border p-5">
+          <div>
+            <h3 className="text-sm font-semibold">@ 默认推荐</h3>
+            <p className="mt-1 text-xs leading-6 text-muted-foreground">控制编辑器输入空白 @ 时优先展示的用户。填写后只显示这份名单；留空时继续使用 AI 账号和管理成员作为默认推荐。</p>
+          </div>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm font-medium">默认推荐用户名</span>
+            <textarea
+              value={draft.mentionDefaultUsernames}
+              onChange={(event) => updateDraftField("mentionDefaultUsernames", event.target.value)}
+              placeholder="每行一个用户名，也可用逗号分隔；例如 admin"
+              className="min-h-36 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm leading-6 outline-hidden"
+            />
+          </label>
+          <p className="text-xs leading-6 text-muted-foreground">只接受 3-20 位字母、数字或下划线用户名，最多保存 20 个；不存在、被禁用或当前登录用户本人会在前台自动过滤。</p>
+        </div>
+      ) : null}
+
       {activeSubTab === "chat" ? (
         <div className="rounded-xl border border-border p-5 space-y-4">
           <div>

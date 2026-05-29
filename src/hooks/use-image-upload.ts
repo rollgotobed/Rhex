@@ -19,6 +19,7 @@ type UseImageUploadOptions = {
 type UseImageUploadResult = {
   uploading: boolean
   uploadResults: UploadFileResult[]
+  uploadImageFilesForMarkdown: (files: File[]) => Promise<UploadFileResult[]>
   uploadImageFiles: (files: File[]) => Promise<number>
   clearUploadResults: () => void
 }
@@ -31,9 +32,9 @@ export function useImageUpload({ uploadFolder = "posts", onInsert }: UseImageUpl
     setUploadResults([])
   }, [])
 
-  const uploadImageFiles = useCallback(async (files: File[]) => {
+  const uploadImageFilesForMarkdown = useCallback(async (files: File[]) => {
     if (files.length === 0) {
-      return 0
+      return []
     }
 
     setUploading(true)
@@ -42,6 +43,8 @@ export function useImageUpload({ uploadFolder = "posts", onInsert }: UseImageUpl
       status: "queued",
     }))
     setUploadResults(initialResults)
+
+    const finalResults = Array<UploadFileResult | null>(files.length).fill(null)
 
     const updateUploadResult = (index: number, next: Partial<UploadFileResult> & Pick<UploadFileResult, "status">) => {
       setUploadResults((prev) => prev.map((item, i) => (
@@ -54,7 +57,7 @@ export function useImageUpload({ uploadFolder = "posts", onInsert }: UseImageUpl
       )))
     }
 
-    const uploadOne = async (file: File, index: number): Promise<string | null> => {
+    const uploadOne = async (file: File, index: number): Promise<UploadFileResult> => {
       updateUploadResult(index, {
         status: "uploading",
         errorMessage: undefined,
@@ -75,16 +78,26 @@ export function useImageUpload({ uploadFolder = "posts", onInsert }: UseImageUpl
         if (!response.ok) {
           const errorMessage = result.message ?? `${file.name} 上传失败`
           updateUploadResult(index, { status: "error", errorMessage })
-          return null
+          return { name: file.name, status: "error", errorMessage }
         }
 
         const urlPath: string = result.data?.urlPath ?? ""
+        if (!urlPath) {
+          const errorMessage = `${file.name} 上传成功，但返回地址为空`
+          updateUploadResult(index, { status: "error", errorMessage })
+          return { name: file.name, status: "error", errorMessage }
+        }
+
         updateUploadResult(index, {
           status: "success",
           urlPath,
           errorMessage: undefined,
         })
-        return urlPath
+        return {
+          name: file.name,
+          status: "success",
+          urlPath,
+        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : `${file.name} 上传失败`
         updateUploadResult(index, {
@@ -92,12 +105,11 @@ export function useImageUpload({ uploadFolder = "posts", onInsert }: UseImageUpl
           errorMessage,
           urlPath: undefined,
         })
-        return null
+        return { name: file.name, status: "error", errorMessage }
       }
     }
 
     try {
-      const urlPaths = Array<string | null>(files.length).fill(null)
       let nextIndex = 0
       const workerCount = Math.min(IMAGE_UPLOAD_MAX_CONCURRENCY, files.length)
 
@@ -105,29 +117,43 @@ export function useImageUpload({ uploadFolder = "posts", onInsert }: UseImageUpl
         while (nextIndex < files.length) {
           const currentIndex = nextIndex
           nextIndex += 1
-          urlPaths[currentIndex] = await uploadOne(files[currentIndex], currentIndex)
+          finalResults[currentIndex] = await uploadOne(files[currentIndex], currentIndex)
         }
       })
 
       await Promise.all(workers)
 
-      const markdownLines = files
-        .map((file, index) => urlPaths[index] !== null ? `![${file.name}](${urlPaths[index]})` : null)
-        .filter((line): line is string => line !== null)
-
-      if (markdownLines.length > 0) {
-        onInsert(markdownLines.join("\n\n"))
-      }
-
-      return markdownLines.length
+      const normalizedFinalResults = files.map<UploadFileResult>((file, index) => (
+        finalResults[index] ?? {
+          name: file.name,
+          status: "error",
+          errorMessage: "上传失败",
+        }
+      ))
+      setUploadResults(normalizedFinalResults)
+      return normalizedFinalResults
     } finally {
       setUploading(false)
     }
-  }, [onInsert, uploadFolder])
+  }, [uploadFolder])
+
+  const uploadImageFiles = useCallback(async (files: File[]) => {
+    const results = await uploadImageFilesForMarkdown(files)
+    const markdownLines = files
+      .map((file, index) => results[index]?.status === "success" && results[index]?.urlPath ? `![${file.name}](${results[index]?.urlPath})` : null)
+      .filter((line): line is string => line !== null)
+
+    if (markdownLines.length > 0) {
+      onInsert(markdownLines.join("\n\n"))
+    }
+
+    return markdownLines.length
+  }, [onInsert, uploadImageFilesForMarkdown])
 
   return {
     uploading,
     uploadResults,
+    uploadImageFilesForMarkdown,
     uploadImageFiles,
     clearUploadResults,
   }

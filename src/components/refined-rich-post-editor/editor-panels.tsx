@@ -730,7 +730,9 @@ export function ImageInsertPanel({
           <div className="mb-3 space-y-1">
             <div className="text-sm font-medium text-foreground">图片上传</div>
             <p className="text-xs leading-5 text-muted-foreground">
-              {uploading
+              {uploadSummary.totalCount === 0
+                ? "选择或粘贴图片后会自动上传，并插入 Markdown 图片语法。"
+                : uploading
                 ? `队列处理中：正在上传 ${uploadSummary.activeCount} 张，等待 ${uploadSummary.queuedCount} 张，已完成 ${uploadSummary.completedCount}/${uploadSummary.totalCount}。`
                 : `本次上传完成：成功 ${uploadSummary.successCount} 张，失败 ${uploadSummary.errorCount} 张。`}
             </p>

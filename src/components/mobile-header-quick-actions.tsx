@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { CheckCircle2, ChevronLeft, ChevronRight, Compass, Grid2x2, PenSquare, Search } from "lucide-react"
 import { Suspense, useEffect, useMemo, useState } from "react"
 
@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/toast"
 import type { SiteBoardItem } from "@/lib/boards"
 import type { SiteHeaderAppLinkItem } from "@/lib/site-header-app-links"
 import type { SiteSearchSettings } from "@/lib/site-search-settings"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { cn } from "@/lib/utils"
 import type { SiteZoneItem } from "@/lib/zones"
 
@@ -43,6 +44,7 @@ export function MobileHeaderQuickActions({
   boards,
 }: MobileHeaderQuickActionsProps) {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const router = useRouter()
   const { user, surface, refresh } = useCurrentUser()
   const isLoggedIn = Boolean(user)
@@ -55,6 +57,8 @@ export function MobileHeaderQuickActions({
   const [keyword, setKeyword] = useState("")
 
   const zoneMap = useMemo(() => new Map(zones.map((zone) => [zone.id, zone])), [zones])
+  const currentSearch = searchParams.toString()
+  const loginHref = buildLoginHrefWithRedirect(`${pathname}${currentSearch ? `?${currentSearch}` : ""}`)
 
   const boardsWithZone = useMemo(() => boards.map((board) => ({
     ...board,
@@ -138,7 +142,7 @@ export function MobileHeaderQuickActions({
   async function handleCheckIn() {
     if (!isLoggedIn) {
       setNavOpen(false)
-      router.push("/login")
+      router.push(loginHref)
       return
     }
 
@@ -260,7 +264,7 @@ export function MobileHeaderQuickActions({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Link
-                  href={isLoggedIn ? "/write" : "/login"}
+                  href={isLoggedIn ? "/write" : loginHref}
                   className="rounded-[18px] border border-border bg-card px-4 py-3 transition-colors hover:bg-accent/40"
                   onClick={() => setNavOpen(false)}
                 >

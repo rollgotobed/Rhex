@@ -246,6 +246,10 @@ export interface SiteChatSettings {
   enabled: boolean
 }
 
+export interface MentionRecommendationSettings {
+  defaultUsernames: string[]
+}
+
 export interface PostContentLengthSettings {
   postTitleMinLength: number
   postTitleMaxLength: number

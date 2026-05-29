@@ -12,6 +12,7 @@ import { MessageThreadPanel, type LocalMessageSentPayload } from "@/components/m
 import { showConfirm } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
+import { buildLoginHrefWithRedirect } from "@/lib/auth-redirect"
 import { isImageOnlyMessageContent, summarizeMessagePreview } from "@/lib/message-media"
 import {
   isSiteChatConversationId,
@@ -839,7 +840,7 @@ export function MessagesClient({
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <p>请先登录后查看私信列表和聊天记录。</p>
-        <Link href="/login">
+        <Link href={buildLoginHrefWithRedirect("/messages")}>
           <Button className="rounded-full">前往登录</Button>
         </Link>
       </CardContent>

@@ -200,7 +200,7 @@ export default async function BoardPage(props: PageProps<"/boards/[slug]">) {
               <AddonSlotRenderer slot="board.hero.after" />
 
               {!permission.allowed ? (
-                <AccessDeniedCard title="当前节点暂不可访问" description={`该节点设置了${settings.pointName}、等级或 VIP 浏览门槛，未满足条件的用户无法查看节点内容。`} reason={permission.message || "当前没有访问权限"} isLoggedIn={Boolean(currentUser)} />
+                <AccessDeniedCard title="当前节点暂不可访问" description={`该节点设置了${settings.pointName}、等级或 VIP 浏览门槛，未满足条件的用户无法查看节点内容。`} reason={permission.message || "当前没有访问权限"} isLoggedIn={Boolean(currentUser)} redirectTarget={`/boards/${params.slug}`} />
               ) : (
                 <>
                   <AddonSlotRenderer slot="board.content.before" />
